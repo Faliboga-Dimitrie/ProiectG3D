@@ -1,10 +1,12 @@
 #pragma once
 
-enum class CameraMovement {
+enum class ECameraMovementType
+{
+	UNKNOWN,
 	FORWARD,
 	BACKWARD,
-	RIGHT,
 	LEFT,
+	RIGHT,
 	UP,
-	DOWN,
+	DOWN
 };

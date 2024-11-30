@@ -24,7 +24,6 @@ class Camera
     const float YAW = -90.0f;
     const float PITCH = 0.0f;
     const float FOV = 45.0f;
-    const float MouseSensitivity = 0.5f;
     glm::vec3 startPosition;
 
 protected:
@@ -56,13 +55,14 @@ public:
 
     Camera(const int width, const int height, const glm::vec3& position);
     void Set(const int width, const int height, const glm::vec3& position);
+    void Reset(int width, int height);
+    void Reshape(int width, int height);
     const glm::mat4 GetViewMatrix() const;
+    const glm::vec3 GetPosition() const;
     const glm::mat4 GetProjectionMatrix() const;
-    void updatePosition(CameraMovement direction, double deltaTime);
-    void ResetCamera(int width, int height);
+    void ProcessKeyboard(ECameraMovementType direction, float deltaTime);
     void MouseControl(float xpos, float ypos);
     void ProcessMouseScroll(float yOffset);
-    void Reshape(int width, int height);
 
 private:
 
