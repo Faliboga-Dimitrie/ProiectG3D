@@ -35,7 +35,7 @@
     <ClInclude Include="Camera.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="CameraMovement.h">
+    <ClInclude Include="CameraMovementType.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Vertex.h">
@@ -56,5 +56,23 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="..\Shaders\Lamp.fs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\Shaders\Lamp.vs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\Shaders\PhongLight.fs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\Shaders\PhongLight.vs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\Shaders\PhongLightWithTexture.fs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\Shaders\PhongLightWithTexture.vs">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>
