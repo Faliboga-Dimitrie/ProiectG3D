@@ -58,7 +58,7 @@ const glm::mat4 Camera::GetProjectionMatrix() const
 {
 	glm::mat4 Proj = glm::mat4(1);
 	if (isPerspective) {
-		float aspectRatio = ((float)(width)) / height;
+		float aspectRatio = (height != 0) ? static_cast<float>(width) / height : 1.0f;
 		Proj = glm::perspective(glm::radians(FoVy), aspectRatio, zNear, zFar);
 	}
 	else {
@@ -69,6 +69,7 @@ const glm::mat4 Camera::GetProjectionMatrix() const
 	}
 	return Proj;
 }
+
 
 void Camera::ProcessKeyboard(CameraMovementType direction, float deltaTime)
 {
