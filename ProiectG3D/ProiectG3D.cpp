@@ -8,6 +8,7 @@
 #include "Shader.h"
 #include "Model.h"
 #include "Camera.h"
+#include "SkyBox.h"
 //#include "CameraMovementType.h"
 
 // settings
@@ -16,6 +17,7 @@ const unsigned int SCR_HEIGHT = 600;//dim ecran
 
 GLuint ProjMatrixLocation, ViewMatrixLocation, WorldMatrixLocation;
 Camera* pCamera = nullptr;
+SkyBox* skybox = nullptr;
 
 void Cleanup()
 {
@@ -139,9 +141,12 @@ int main()
 	std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
 	std::string currentPath = converter.to_bytes(wscurrentPath);
 
+	SkyBox* skybox = new SkyBox(currentPath + "\\Textures\\SkyBox\\", "right.jpg", "left.jpg", "top.jpg", "bottom.jpg", "front.jpg", "back.jpg");
+
 	Shader lightingShader((currentPath + "\\Shaders\\PhongLight.vs").c_str(), (currentPath + "\\Shaders\\PhongLight.fs").c_str());
 	Shader lightingWithTextureShader((currentPath + "\\Shaders\\PhongLightWithTexture.vs").c_str(), (currentPath + "\\Shaders\\PhongLightWithTexture.fs").c_str());
 	Shader lampShader((currentPath + "\\Shaders\\Lamp.vs").c_str(), (currentPath + "\\Shaders\\Lamp.fs").c_str());
+	Shader skyboxShader((currentPath + "\\Shaders\\SkyBox.vs").c_str(), (currentPath + "\\Shaders\\SkyBox.fs").c_str());
 
 	std::string go_kartObjFileName = (currentPath + "\\Models\\Kart\\go_kart.obj");
 	Model go_kartObjModel(go_kartObjFileName, false);
@@ -159,9 +164,16 @@ int main()
 
 		lightPos.x = 5.0 * cos(glfwGetTime());
 		lightPos.z = 5.0 * sin(glfwGetTime());
-
 		cubePos.x = 10 * sin(glfwGetTime());
 		cubePos.z = 10 * cos(glfwGetTime());
+
+		//Skybox
+		glDepthMask(GL_FALSE);
+		skyboxShader.use();
+		skyboxShader.setMat4("projection", pCamera->GetProjectionMatrix());
+		skyboxShader.setMat4("view", glm::mat4(glm::mat3(pCamera->GetViewMatrix())));
+		skybox->Render();
+		glDepthMask(GL_TRUE);
 
 		lightingShader.use();
 		lightingShader.SetVec3("objectColor", 0.5f, 1.0f, 0.31f);
