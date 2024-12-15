@@ -69,6 +69,7 @@ SkyBox::~SkyBox()
 
 void SkyBox::Render()
 {
+    glDepthMask(GL_FALSE);
     // Asociaza textura cubemap
     glActiveTexture(GL_TEXTURE0);
     cubemapTexture->Bind(GL_TEXTURE0);
@@ -77,6 +78,8 @@ void SkyBox::Render()
     glBindVertexArray(VAO);
     glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);
+
+    glDepthMask(GL_TRUE);
 }
 
 

@@ -168,12 +168,11 @@ int main()
 		cubePos.z = 10 * cos(glfwGetTime());
 
 		//Skybox
-		glDepthMask(GL_FALSE);
 		skyboxShader.use();
 		skyboxShader.setMat4("projection", pCamera->GetProjectionMatrix());
 		skyboxShader.setMat4("view", glm::mat4(glm::mat3(pCamera->GetViewMatrix())));
 		skybox->Render();
-		glDepthMask(GL_TRUE);
+		
 
 		lightingShader.use();
 		lightingShader.SetVec3("objectColor", 0.5f, 1.0f, 0.31f);
