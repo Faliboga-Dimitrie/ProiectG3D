@@ -9,6 +9,8 @@
 #include "Model.h"
 #include "Camera.h"
 #include "SkyBox.h"
+#include "Pilot.h"
+
 //#include "CameraMovementType.h"
 
 // settings
@@ -157,8 +159,12 @@ int main()
 	std::string go_kartObjFileName = (currentPath + "\\Models\\Kart\\go_kart.obj");
 	Model go_kartObjModel(go_kartObjFileName, false);
 
+
 	std::string pilotObjFileName = (currentPath + "\\Models\\Pilot\\pilot.obj");
-	Model pilotObjModel(pilotObjFileName, false);
+	Pilot pilotModel(pilotObjFileName, false);
+
+
+	
 
 	
 
@@ -212,8 +218,12 @@ int main()
 		go_kartModel = glm::translate(go_kartModel, kartPos);       // Aplică poziția kart-ului
 		go_kartModel = glm::scale(go_kartModel, glm::vec3(0.05f));  // Aplică scala kart-ului
 
+
+		pilotModel.UpdatePosition(kartPos);
+		lightingWithTextureShader.use();
 		lightingWithTextureShader.setMat4("model", go_kartModel);
 		go_kartObjModel.Draw(lightingWithTextureShader);
+		pilotModel.Draw(lightingWithTextureShader);
 
 
 		glm::mat4 pilotModel = glm::mat4(1.0f);
@@ -221,7 +231,9 @@ int main()
 		pilotModel = glm::translate(pilotModel, glm::vec3(0.0f, 1.2f, 0.0f)); // Poziționează pilotul în kart
 		pilotModel = go_kartModel * pilotModel; // Aplică transformările kart-ului la pilot
 		lightingWithTextureShader.setMat4("model", pilotModel);
-		pilotObjModel.Draw(lightingWithTextureShader);
+		///pilotModel.Draw(lightingWithTextureShader);
+
+		
 
 		lampShader.use();
 		lampShader.setMat4("projection", pCamera->GetProjectionMatrix());

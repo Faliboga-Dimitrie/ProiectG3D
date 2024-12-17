@@ -135,6 +135,7 @@
     <ClCompile Include="CubemapTexture.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="Model.cpp" />
+    <ClCompile Include="Pilot.cpp" />
     <ClCompile Include="ProiectG3D.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="SkyBox.cpp" />
@@ -145,6 +146,7 @@
     <ClInclude Include="CubemapTexture.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="Model.h" />
+    <ClInclude Include="Pilot.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="SkyBox.h" />
     <ClInclude Include="Texture.h" />
