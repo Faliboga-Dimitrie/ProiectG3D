@@ -8,13 +8,14 @@
 #include "Shader.h"
 #include "Model.h"
 #include "Camera.h"
+#include "SkyBox.h"
+//#include "CameraMovementType.h"
 
 // settings
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;//dim ecran
 
 GLuint ProjMatrixLocation, ViewMatrixLocation, WorldMatrixLocation;
 Camera* pCamera = nullptr;
+SkyBox* skybox = nullptr;
 
 void Cleanup()
 {
@@ -29,35 +30,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 double deltaTime = 0.0f;	// time between current frame and last frame
 double lastFrame = 0.0f;
 
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
-{
-	if (key == GLFW_KEY_A && action == GLFW_PRESS) {
-
-	}
-
-	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-		glfwSetWindowShouldClose(window, true);
-
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		pCamera->ProcessKeyboard(ECameraMovementType::FORWARD, (float)deltaTime);
-	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		pCamera->ProcessKeyboard(ECameraMovementType::BACKWARD, (float)deltaTime);
-	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		pCamera->ProcessKeyboard(ECameraMovementType::LEFT, (float)deltaTime);
-	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-		pCamera->ProcessKeyboard(ECameraMovementType::RIGHT, (float)deltaTime);
-	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
-		pCamera->ProcessKeyboard(ECameraMovementType::UP, (float)deltaTime);
-	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
-		pCamera->ProcessKeyboard(ECameraMovementType::DOWN, (float)deltaTime);
-
-	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
-		int width, height;
-		glfwGetWindowSize(window, &width, &height);
-		pCamera->Reset(width, height);
-
-	}
-}
+void processInput(GLFWwindow* window);
 
 int main()
 {
@@ -66,7 +39,10 @@ int main()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Lab 7", NULL, NULL);
+	GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+	const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+
+	GLFWwindow* window = glfwCreateWindow(mode->width, mode->height, "Lab 7", NULL, NULL);
 	if (window == NULL) {
 		std::cout << "Failed to create GLFW window" << std::endl;
 		glfwTerminate();
@@ -74,10 +50,10 @@ int main()
 	}
 
 	glfwMakeContextCurrent(window);
+	glViewport(0, 0, mode->width, mode->height);
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 	glfwSetCursorPosCallback(window, mouse_callback);
 	glfwSetScrollCallback(window, scroll_callback);
-	glfwSetKeyCallback(window, key_callback);
 
 	// tell GLFW to capture our mouse
 	//glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -153,7 +129,7 @@ int main()
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
-	pCamera = new Camera(SCR_WIDTH, SCR_HEIGHT, glm::vec3(0.0, 2.0, 6.0));
+	pCamera = new Camera(mode->width, mode->height, glm::vec3(0.0, 2.0, 6.0));
 
 	glm::vec3 lightPos(0.0f, 2.0f, 1.0f);
 	glm::vec3 cubePos(0.0f, 5.0f, 1.0f);
@@ -167,9 +143,12 @@ int main()
 	std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
 	std::string currentPath = converter.to_bytes(wscurrentPath);
 
+	SkyBox* skybox = new SkyBox(currentPath + "\\Textures\\SkyBox\\", "right.jpg", "left.jpg", "top.jpg", "bottom.jpg", "front.jpg", "back.jpg");
+
 	Shader lightingShader((currentPath + "\\Shaders\\PhongLight.vs").c_str(), (currentPath + "\\Shaders\\PhongLight.fs").c_str());
 	Shader lightingWithTextureShader((currentPath + "\\Shaders\\PhongLightWithTexture.vs").c_str(), (currentPath + "\\Shaders\\PhongLightWithTexture.fs").c_str());
 	Shader lampShader((currentPath + "\\Shaders\\Lamp.vs").c_str(), (currentPath + "\\Shaders\\Lamp.fs").c_str());
+	Shader skyboxShader((currentPath + "\\Shaders\\SkyBox.vs").c_str(), (currentPath + "\\Shaders\\SkyBox.fs").c_str());
 
 	std::string go_kartObjFileName = (currentPath + "\\Models\\Kart\\go_kart.obj");
 	Model go_kartObjModel(go_kartObjFileName, false);
@@ -186,11 +165,19 @@ int main()
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+		processInput(window);
+
 		lightPos.x = 5.0 * cos(glfwGetTime());
 		lightPos.z = 5.0 * sin(glfwGetTime());
-
 		cubePos.x = 10 * sin(glfwGetTime());
 		cubePos.z = 10 * cos(glfwGetTime());
+
+		//Skybox
+		skyboxShader.use();
+		skyboxShader.setMat4("projection", pCamera->GetProjectionMatrix());
+		skyboxShader.setMat4("view", glm::mat4(glm::mat3(pCamera->GetViewMatrix())));
+		skybox->Render();
+		
 
 		lightingShader.use();
 		lightingShader.SetVec3("objectColor", 0.5f, 1.0f, 0.31f);
@@ -262,5 +249,30 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 void scroll_callback(GLFWwindow* window, double xoffset, double yOffset)
 {
 	pCamera->ProcessMouseScroll((float)yOffset);
+}
+
+void processInput(GLFWwindow* window)
+{
+	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+		glfwSetWindowShouldClose(window, true);
+
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+		pCamera->ProcessKeyboard(CameraMovementType::FORWARD, (float)deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+		pCamera->ProcessKeyboard(CameraMovementType::BACKWARD, (float)deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+		pCamera->ProcessKeyboard(CameraMovementType::LEFT, (float)deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+		pCamera->ProcessKeyboard(CameraMovementType::RIGHT, (float)deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+		pCamera->ProcessKeyboard(CameraMovementType::UP, (float)deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+		pCamera->ProcessKeyboard(CameraMovementType::DOWN, (float)deltaTime);
+
+	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
+		int width, height;
+		glfwGetWindowSize(window, &width, &height);
+		pCamera->Reset(width, height);
+	}
 }
 

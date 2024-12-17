@@ -1,4 +1,5 @@
 # ProiectG3D
 
-Asigurati-va calea corecta catre directoare si bibleotecile acestora. DLL-urile sunt deja incluse.
-Daca exista erori assimp - rulati Restore NuGet Packages din Visual Studio
+Make sure to ensure the correct path to lib and dll folders. Dll are already included in debug
+When pulling make sure to extract the contents of models and not use directly the archive
+When adding a model, compres it. Once compresed added via github or other methodes to models archive

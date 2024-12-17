@@ -30,12 +30,18 @@
     <ClCompile Include="Mesh.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="CubemapTexture.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SkyBox.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="CameraMovement.h">
+    <ClInclude Include="CameraMovementType.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Vertex.h">
@@ -53,8 +59,38 @@
     <ClInclude Include="Mesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="CubemapTexture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SkyBox.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="..\Shaders\Lamp.fs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\Shaders\Lamp.vs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\Shaders\PhongLight.fs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\Shaders\PhongLight.vs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\Shaders\PhongLightWithTexture.fs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\Shaders\PhongLightWithTexture.vs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\Shaders\SkyBox.fs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\Shaders\SkyBox.vs">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

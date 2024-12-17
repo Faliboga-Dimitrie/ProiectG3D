@@ -132,21 +132,33 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="CubemapTexture.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="Model.cpp" />
     <ClCompile Include="ProiectG3D.cpp" />
     <ClCompile Include="Shader.cpp" />
+    <ClCompile Include="SkyBox.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />
-    <ClInclude Include="CameraMovement.h" />
+    <ClInclude Include="CameraMovementType.h" />
+    <ClInclude Include="CubemapTexture.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="Model.h" />
     <ClInclude Include="Shader.h" />
+    <ClInclude Include="SkyBox.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="Vertex.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\Shaders\Lamp.fs" />
+    <None Include="..\Shaders\Lamp.vs" />
+    <None Include="..\Shaders\PhongLight.fs" />
+    <None Include="..\Shaders\PhongLight.vs" />
+    <None Include="..\Shaders\PhongLightWithTexture.fs" />
+    <None Include="..\Shaders\PhongLightWithTexture.vs" />
+    <None Include="..\Shaders\SkyBox.fs" />
+    <None Include="..\Shaders\SkyBox.vs" />
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -11,7 +11,7 @@
 #include <gtc/type_ptr.hpp>
 
 #include <glfw3.h>
-#include "CameraMovement.h"
+#include "CameraMovementType.h"
 
 #pragma comment (lib, "glfw3dll.lib")
 #pragma comment (lib, "glew32.lib")
@@ -27,8 +27,8 @@ class Camera
     glm::vec3 startPosition;
 
 protected:
-    const float cameraSpeedFactor = 200.5f;
-    const float mouseSensitivity = 0.1f;
+    const float cameraSpeedFactor = 9.5f;
+    const float mouseSensitivity = 0.2f;
 
     // Perspective properties
     float zNear;
@@ -60,7 +60,7 @@ public:
     const glm::mat4 GetViewMatrix() const;
     const glm::vec3 GetPosition() const;
     const glm::mat4 GetProjectionMatrix() const;
-    void ProcessKeyboard(ECameraMovementType direction, float deltaTime);
+    void ProcessKeyboard(CameraMovementType direction, float deltaTime);
     void MouseControl(float xpos, float ypos);
     void ProcessMouseScroll(float yOffset);
 
