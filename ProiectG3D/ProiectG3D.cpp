@@ -1,4 +1,4 @@
-#include <Windows.h>
+﻿#include <Windows.h>
 #include <locale>
 #include <codecvt>
 #include <iostream>
@@ -174,6 +174,9 @@ int main()
 	std::string go_kartObjFileName = (currentPath + "\\Models\\Kart\\go_kart.obj");
 	Model go_kartObjModel(go_kartObjFileName, false);
 
+	std::string pilotObjFileName = (currentPath + "\\Models\\Pilot\\pilot.obj");
+	Model pilotObjModel(pilotObjFileName, false);
+
 	while (!glfwWindowShouldClose(window)) 
 	{
 		double currentFrame = glfwGetTime();
@@ -213,6 +216,14 @@ int main()
 		glm::mat4 go_kartModel = glm::scale(glm::mat4(1.0), glm::vec3(0.05f));
 		lightingWithTextureShader.setMat4("model", go_kartModel);
 		go_kartObjModel.Draw(lightingWithTextureShader);
+
+
+		glm::mat4 pilotModel = glm::mat4(1.0f);
+		pilotModel = glm::scale(pilotModel, glm::vec3(0.02f)); // Ajustează scala pilotului
+		pilotModel = glm::translate(pilotModel, glm::vec3(0.0f, 1.2f, 0.0f)); // Poziționează pilotul în kart
+		pilotModel = go_kartModel * pilotModel; // Aplică transformările kart-ului la pilot
+		lightingWithTextureShader.setMat4("model", pilotModel);
+		pilotObjModel.Draw(lightingWithTextureShader);
 
 		lampShader.use();
 		lampShader.setMat4("projection", pCamera->GetProjectionMatrix());
