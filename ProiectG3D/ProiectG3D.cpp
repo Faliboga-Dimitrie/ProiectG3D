@@ -15,7 +15,6 @@
 
 // settings
 
-GLuint ProjMatrixLocation, ViewMatrixLocation, WorldMatrixLocation;
 Camera* pCamera = nullptr;
 SkyBox* skybox = nullptr;
 
@@ -163,12 +162,6 @@ int main()
 	std::string pilotObjFileName = (currentPath + "\\Models\\Pilot\\pilot.obj");
 	Pilot pilotModel(pilotObjFileName, false);
 
-
-	
-
-	
-
-
 	while (!glfwWindowShouldClose(window)) 
 	{
 		double currentFrame = glfwGetTime();
@@ -216,7 +209,7 @@ int main()
 		///glm::mat4 go_kartModel = glm::scale(glm::mat4(1.0), glm::vec3(0.05f));
 		glm::mat4 go_kartModel = glm::mat4(1.0f);
 		go_kartModel = glm::translate(go_kartModel, kartPos);       // Aplică poziția kart-ului
-		go_kartModel = glm::scale(go_kartModel, glm::vec3(0.05f));  // Aplică scala kart-ului
+		go_kartModel = glm::scale(go_kartModel, glm::vec3(0.06f));  // Aplică scala kart-ului
 
 
 		pilotModel.UpdatePosition(kartPos);
