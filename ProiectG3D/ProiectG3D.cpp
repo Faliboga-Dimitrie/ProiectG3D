@@ -32,6 +32,10 @@ double lastFrame = 0.0f;
 
 void processInput(GLFWwindow* window);
 
+glm::vec3 kartPos(0.0f, 0.0f, 0.0f);  // Poziția inițială a kart-ului
+float kartSpeed = 5.0f;               // Viteza de mișcare a kart-ului
+
+
 int main()
 {
 	glfwInit();
@@ -156,6 +160,9 @@ int main()
 	std::string pilotObjFileName = (currentPath + "\\Models\\Pilot\\pilot.obj");
 	Model pilotObjModel(pilotObjFileName, false);
 
+	
+
+
 	while (!glfwWindowShouldClose(window)) 
 	{
 		double currentFrame = glfwGetTime();
@@ -200,7 +207,11 @@ int main()
 		lightingWithTextureShader.setMat4("view", pCamera->GetViewMatrix());
 
 		//go_kart model
-		glm::mat4 go_kartModel = glm::scale(glm::mat4(1.0), glm::vec3(0.05f));
+		///glm::mat4 go_kartModel = glm::scale(glm::mat4(1.0), glm::vec3(0.05f));
+		glm::mat4 go_kartModel = glm::mat4(1.0f);
+		go_kartModel = glm::translate(go_kartModel, kartPos);       // Aplică poziția kart-ului
+		go_kartModel = glm::scale(go_kartModel, glm::vec3(0.05f));  // Aplică scala kart-ului
+
 		lightingWithTextureShader.setMat4("model", go_kartModel);
 		go_kartObjModel.Draw(lightingWithTextureShader);
 
@@ -251,7 +262,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yOffset)
 	pCamera->ProcessMouseScroll((float)yOffset);
 }
 
-void processInput(GLFWwindow* window)
+void processInput(GLFWwindow* window) 
 {
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
@@ -268,6 +279,20 @@ void processInput(GLFWwindow* window)
 		pCamera->ProcessKeyboard(CameraMovementType::UP, (float)deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
 		pCamera->ProcessKeyboard(CameraMovementType::DOWN, (float)deltaTime);
+
+	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+		kartPos.z -= kartSpeed * (float)deltaTime;  // Mișcare înainte
+
+	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+		kartPos.z += kartSpeed * (float)deltaTime;  // Mișcare înapoi
+
+	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+		kartPos.x -= kartSpeed * (float)deltaTime;  // Mișcare la stânga
+
+	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+		kartPos.x += kartSpeed * (float)deltaTime;  // Mișcare la dreapta
+
+
 
 	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
 		int width, height;
