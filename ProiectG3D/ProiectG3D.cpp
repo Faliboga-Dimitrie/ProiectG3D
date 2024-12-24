@@ -5,7 +5,7 @@
 #include <fstream>
 #include <sstream>
 
-#include "Shader.h"
+#include "ShaderManager.h"
 #include "Model.h"
 #include "Camera.h"
 #include "SkyBox.h"
@@ -26,12 +26,15 @@ void Cleanup()
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
+void processInput(GLFWwindow* window);
+void RenderScene(ShaderManager& shaderManager, std::unordered_map<std::string,Model> models);
+void RenderSkybox(Shader& shader);
+void RenderTrack(Shader& shader, Model& model);
+void RenderKart(Shader& shader, Model& KartModel, Model& PilotModel);
 
 // timing
 double deltaTime = 0.0f;	// time between current frame and last frame
 double lastFrame = 0.0f;
-
-void processInput(GLFWwindow* window);
 
 glm::vec3 kartPos(0.0f, 0.0f, 0.0f);  // Poziția inițială a kart-ului
 float kartSpeed = 5.0f;               // Viteza de mișcare a kart-ului
@@ -43,6 +46,9 @@ int main()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+	ShaderManager shaderManager;
+	std::unordered_map<std::string, Model> models;
 
 	GLFWmonitor* monitor = glfwGetPrimaryMonitor();
 	const GLFWvidmode* mode = glfwGetVideoMode(monitor);
@@ -67,7 +73,7 @@ int main()
 
 	glEnable(GL_DEPTH_TEST);
 
-	float vertices[] = {
+	/*float vertices[] = {
 		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
 		0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
 		0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
@@ -132,7 +138,7 @@ int main()
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(0);*/
 
 	pCamera = new Camera(mode->width, mode->height, glm::vec3(0.0, 2.0, 6.0));
 
@@ -150,17 +156,22 @@ int main()
 
 	SkyBox* skybox = new SkyBox(currentPath + "\\Textures\\SkyBox\\", "right.jpg", "left.jpg", "top.jpg", "bottom.jpg", "front.jpg", "back.jpg");
 
-	Shader lightingShader((currentPath + "\\Shaders\\PhongLight.vs").c_str(), (currentPath + "\\Shaders\\PhongLight.fs").c_str());
-	Shader lightingWithTextureShader((currentPath + "\\Shaders\\PhongLightWithTexture.vs").c_str(), (currentPath + "\\Shaders\\PhongLightWithTexture.fs").c_str());
-	Shader lampShader((currentPath + "\\Shaders\\Lamp.vs").c_str(), (currentPath + "\\Shaders\\Lamp.fs").c_str());
-	Shader skyboxShader((currentPath + "\\Shaders\\SkyBox.vs").c_str(), (currentPath + "\\Shaders\\SkyBox.fs").c_str());
+	shaderManager.LoadShader("lightingShader", currentPath + "\\Shaders\\PhongLight.vs", currentPath + "\\Shaders\\PhongLight.fs");
+	shaderManager.LoadShader("lightingWithTextureShader", currentPath + "\\Shaders\\PhongLightWithTexture.vs", currentPath + "\\Shaders\\PhongLightWithTexture.fs");
+	shaderManager.LoadShader("lampShader", currentPath + "\\Shaders\\Lamp.vs", currentPath + "\\Shaders\\Lamp.fs");
+	shaderManager.LoadShader("skyboxShader", currentPath + "\\Shaders\\SkyBox.vs", currentPath + "\\Shaders\\SkyBox.fs");
 
 	std::string go_kartObjFileName = (currentPath + "\\Models\\Kart\\go_kart.obj");
 	Model go_kartObjModel(go_kartObjFileName, false);
-
+	models["go_kart"] = go_kartObjModel;
 
 	std::string pilotObjFileName = (currentPath + "\\Models\\Pilot\\pilot.obj");
-	Pilot pilotModel(pilotObjFileName, false);
+	Pilot PilotModel(pilotObjFileName, false);
+	models["pilot"] = PilotModel;
+
+	std::string TrackObjFileName = (currentPath + "\\Models\\Track\\ImageToStl.com_race_trackkarting_track_based_on_south_garda.obj");
+	Model TrackModel(TrackObjFileName, false);
+	models["track"] = TrackModel;
 
 	while (!glfwWindowShouldClose(window)) 
 	{
@@ -179,12 +190,13 @@ int main()
 		cubePos.z = 10 * cos(glfwGetTime());
 
 		//Skybox
+		Shader skyboxShader = shaderManager.GetShader("skyboxShader");
 		skyboxShader.use();
 		skyboxShader.setMat4("projection", pCamera->GetProjectionMatrix());
 		skyboxShader.setMat4("view", glm::mat4(glm::mat3(pCamera->GetViewMatrix())));
 		skybox->Render();
-		
 
+		Shader lightingShader = shaderManager.GetShader("lightingShader");
 		lightingShader.use();
 		lightingShader.SetVec3("objectColor", 0.5f, 1.0f, 0.31f);
 		lightingShader.SetVec3("lightColor", 1.0f, 1.0f, 1.0f);
@@ -195,6 +207,7 @@ int main()
 		lightingShader.setMat4("view", pCamera->GetViewMatrix());
 
 		// render the model
+		Shader lightingWithTextureShader = shaderManager.GetShader("lightingWithTextureShader");
 		lightingWithTextureShader.use();
 		lightingWithTextureShader.SetVec3("objectColor", 0.5f, 1.0f, 0.31f);
 		lightingWithTextureShader.SetVec3("lightColor", 1.0f, 1.0f, 1.0f);
@@ -206,17 +219,18 @@ int main()
 		lightingWithTextureShader.setMat4("view", pCamera->GetViewMatrix());
 
 		//go_kart model
-		///glm::mat4 go_kartModel = glm::scale(glm::mat4(1.0), glm::vec3(0.05f));
 		glm::mat4 go_kartModel = glm::mat4(1.0f);
 		go_kartModel = glm::translate(go_kartModel, kartPos);       // Aplică poziția kart-ului
 		go_kartModel = glm::scale(go_kartModel, glm::vec3(0.06f));  // Aplică scala kart-ului
+		glm::vec3 kartForwardVector = glm::normalize(glm::vec3(go_kartModel[2]));  // Obține vectorul de direcție al kart-ului
+		pCamera->UpdateKartPosition(kartPos, kartForwardVector);
 
 
-		pilotModel.UpdatePosition(kartPos);
+		PilotModel.UpdatePosition(kartPos);
 		lightingWithTextureShader.use();
 		lightingWithTextureShader.setMat4("model", go_kartModel);
 		go_kartObjModel.Draw(lightingWithTextureShader);
-		pilotModel.Draw(lightingWithTextureShader);
+		PilotModel.Draw(lightingWithTextureShader);
 
 
 		glm::mat4 pilotModel = glm::mat4(1.0f);
@@ -224,19 +238,13 @@ int main()
 		pilotModel = glm::translate(pilotModel, glm::vec3(0.0f, 1.2f, 0.0f)); // Poziționează pilotul în kart
 		pilotModel = go_kartModel * pilotModel; // Aplică transformările kart-ului la pilot
 		lightingWithTextureShader.setMat4("model", pilotModel);
-		///pilotModel.Draw(lightingWithTextureShader);
 
-		
-
-		lampShader.use();
-		lampShader.setMat4("projection", pCamera->GetProjectionMatrix());
-		lampShader.setMat4("view", pCamera->GetViewMatrix());
-		glm::mat4 lightModel = glm::translate(glm::mat4(1.0), lightPos);
-		lightModel = glm::scale(lightModel, glm::vec3(0.05f)); // a smaller cube
-		lampShader.setMat4("model", lightModel);
-
-		glBindVertexArray(lightVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+		//track model
+		glm::mat4 trackModel = glm::mat4(1.0f);
+		trackModel = glm::scale(trackModel, glm::vec3(200.0f)); // Ajustează scala pistei
+		trackModel = glm::translate(trackModel, glm::vec3(0.0f, -0.008f, 0.0f)); // Poziționează pista
+		lightingWithTextureShader.setMat4("model", trackModel);
+		TrackModel.Draw(lightingWithTextureShader);
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
@@ -244,9 +252,9 @@ int main()
 
 	Cleanup();
 
-	glDeleteVertexArrays(1, &cubeVAO);
+	/*glDeleteVertexArrays(1, &cubeVAO);
 	glDeleteVertexArrays(1, &lightVAO);
-	glDeleteBuffers(1, &VBO);
+	glDeleteBuffers(1, &VBO);*/
 
 	glfwTerminate();
 	return 0;
@@ -286,23 +294,77 @@ void processInput(GLFWwindow* window)
 		pCamera->ProcessKeyboard(CameraMovementType::DOWN, (float)deltaTime);
 
 	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-		kartPos.z -= kartSpeed * (float)deltaTime;  // Mișcare înainte
+		kartPos.z += kartSpeed * (float)deltaTime;  // Mișcare înainte
 
 	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-		kartPos.z += kartSpeed * (float)deltaTime;  // Mișcare înapoi
+		kartPos.z -= kartSpeed * (float)deltaTime;  // Mișcare înapoi
 
 	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
-		kartPos.x -= kartSpeed * (float)deltaTime;  // Mișcare la stânga
+		kartPos.x += kartSpeed * (float)deltaTime;  // Mișcare la stânga
 
 	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-		kartPos.x += kartSpeed * (float)deltaTime;  // Mișcare la dreapta
+		kartPos.x -= kartSpeed * (float)deltaTime;  // Mișcare la dreapta
 
+	if (glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS)
+		pCamera->SetCameraMode(CameraMode::FREE);  // Mișcare libera a camerei
 
+	if (glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS)
+		pCamera->SetCameraMode(CameraMode::FIRST_PERSON);  // Modul first person
+
+	if (glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS)
+		pCamera->SetCameraMode(CameraMode::THIRD_PERSON);  // Modul third person
 
 	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
 		int width, height;
 		glfwGetWindowSize(window, &width, &height);
 		pCamera->Reset(width, height);
 	}
+}
+
+void RenderScene(ShaderManager& shaderManager, std::unordered_map<std::string, Model> models) {
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	RenderSkybox(shaderManager.GetShader("skyboxShader"));
+	RenderKart(shaderManager.GetShader("lightingWithTextureShader"),models.at("go_kart"),models.at("pilot"));
+	RenderTrack(shaderManager.GetShader("lightingWithTextureShader"), models.at("track"));
+}
+
+void RenderSkybox(Shader& shader)
+{
+	shader.use();
+	shader.setMat4("projection", pCamera->GetProjectionMatrix());
+	shader.setMat4("view", glm::mat4(glm::mat3(pCamera->GetViewMatrix())));
+	skybox->Render();
+}
+
+void RenderKart(Shader& shader, Model& KartModel, Model& PilotModel)
+{
+	glm::mat4 go_kartModel = glm::mat4(1.0f);
+	go_kartModel = glm::translate(go_kartModel, kartPos);
+	go_kartModel = glm::scale(go_kartModel, glm::vec3(0.06f));
+
+	shader.use();
+	shader.setMat4("model", go_kartModel);
+	KartModel.Draw(shader);
+
+	glm::mat4 pilotModel = glm::mat4(1.0f);
+	pilotModel = glm::scale(pilotModel, glm::vec3(0.02f));
+	pilotModel = glm::translate(pilotModel, glm::vec3(0.0f, 1.2f, 0.0f));
+	pilotModel = go_kartModel * pilotModel;
+
+	shader.setMat4("model", pilotModel);
+	PilotModel.Draw(shader);
+}
+
+void RenderTrack(Shader& shader, Model& model)
+{
+	glm::mat4 trackModel = glm::mat4(1.0f);
+	trackModel = glm::scale(trackModel, glm::vec3(0.02f));
+	trackModel = glm::translate(trackModel, glm::vec3(0.0f, -600.0f, 0.0f));
+
+	shader.use();
+	shader.setMat4("model", trackModel);
+	model.Draw(shader);
 }
 

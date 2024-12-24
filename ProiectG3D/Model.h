@@ -19,6 +19,8 @@ public:
     string directory;
     bool gammaCorrection;
 
+	Model() = default;
+
     Model(string const& path, bool bSmoothNormals, bool gamma = false);
 
     virtual void Draw(Shader& shader);

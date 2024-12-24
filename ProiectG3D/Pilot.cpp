@@ -21,7 +21,7 @@ void Pilot::Draw(Shader& shader)
 
 // Constructorul clasei Pilot
 Pilot::Pilot(std::string const& path, bool bSmoothNormals, bool gamma)
-    : Model(path, bSmoothNormals, gamma), _offset(3.0f, 0.0f, -1.0f) // Ajustează înălțimea pentru poziție
+    : Model(path, bSmoothNormals, gamma), _offset(3.3f, -0.2f, -1.0f) // Ajustează înălțimea pentru poziție
 {
 }
 
