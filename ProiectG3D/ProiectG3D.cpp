@@ -169,7 +169,7 @@ int main()
 	Pilot PilotModel(pilotObjFileName, false);
 	models["pilot"] = PilotModel;
 
-	std::string TrackObjFileName = (currentPath + "\\Models\\Track\\ImageToStl.com_race_trackkarting_track_based_on_south_garda.obj");
+	std::string TrackObjFileName = (currentPath + "\\Models\\Track\\track.obj");
 	Model TrackModel(TrackObjFileName, false);
 	models["track"] = TrackModel;
 
