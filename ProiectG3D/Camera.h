@@ -26,7 +26,7 @@ enum class CameraMode {
 class Camera
 {
     const float zNEAR = 0.1f;
-    const float zFAR = 500.f;
+    const float zFAR = 2500.f;
     const float YAW = -90.0f;
     const float PITCH = 0.0f;
     const float FOV = 45.0f;
@@ -62,7 +62,7 @@ protected:
 
 public:
 
-    Camera(const int width, const int height, const glm::vec3& position, CameraMode mode = CameraMode::THIRD_PERSON);
+    Camera(const int width, const int height, const glm::vec3& position, CameraMode mode = CameraMode::FREE);
     void Set(const int width, const int height, const glm::vec3& position);
 	void SetCameraMode(CameraMode mode);
     void Reset(int width, int height);

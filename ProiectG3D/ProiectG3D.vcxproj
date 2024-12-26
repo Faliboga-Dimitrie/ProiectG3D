@@ -161,6 +161,8 @@
     <None Include="..\Shaders\PhongLight.vs" />
     <None Include="..\Shaders\PhongLightWithTexture.fs" />
     <None Include="..\Shaders\PhongLightWithTexture.vs" />
+    <None Include="..\Shaders\ShadowMappingDepth.fs" />
+    <None Include="..\Shaders\ShadowMappingDepth.vs" />
     <None Include="..\Shaders\SkyBox.fs" />
     <None Include="..\Shaders\SkyBox.vs" />
     <None Include="packages.config" />

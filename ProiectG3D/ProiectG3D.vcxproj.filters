@@ -104,5 +104,11 @@
     <None Include="..\Shaders\SkyBox.vs">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="..\Shaders\ShadowMappingDepth.fs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\Shaders\ShadowMappingDepth.vs">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>
