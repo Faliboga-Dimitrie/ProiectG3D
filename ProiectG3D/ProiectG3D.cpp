@@ -35,7 +35,7 @@ double lastFrame = 0.0f;
 void processInput(GLFWwindow* window);
 
 glm::vec3 kartPos(0.0f, 0.0f, 0.0f);  // Poziția inițială a kart-ului
-float kartSpeed = 5.0f;               // Viteza de mișcare a kart-ului
+float kartSpeed = 10.0f;               // Viteza de mișcare a kart-ului
 
 
 int main()
