@@ -1,7 +1,7 @@
 ﻿#include "Camera.h"
 
-Camera::Camera(const int width, const int height, const glm::vec3& position):
-	startPosition{ position }
+Camera::Camera(const int width, const int height, const glm::vec3& position, CameraMode mode):
+	startPosition{ position }, currentMode{ mode }, targetKartPosition{ glm::vec3(0.0f) }, kartForward{ glm::vec3(0.0f, 0.0f, 1.0f) }
 {
 	Set(width, height, position);
 }
@@ -29,6 +29,11 @@ void Camera::Set(const int width, const int height, const glm::vec3& position)
     UpdateCameraVectors();
 }
 
+void Camera::SetCameraMode(CameraMode mode)
+{
+	currentMode = mode;
+}
+
 void Camera::Reset(const int width, const int height)
 {
 	Set(width, height, startPosition);
@@ -46,7 +51,22 @@ void Camera::Reshape(int windowWidth, int windowHeight)
 const glm::mat4 Camera::GetViewMatrix() const
 {
 	// Returns the View Matrix
-	return glm::lookAt(position, position + forward, up);
+	if (currentMode == CameraMode::FREE) {
+		// Cameră liberă
+		return glm::lookAt(position, position + forward, up);
+	}
+	else if (currentMode == CameraMode::THIRD_PERSON) {
+		// Cameră în spatele kart-ului
+		glm::vec3 offset = glm::vec3(0.0f, 10.0f, -18.0f);
+		glm::vec3 cameraPosition = targetKartPosition + kartForward * offset.z + glm::vec3(0.0f, offset.y, 0.0f);
+		return glm::lookAt(cameraPosition, targetKartPosition, worldUp);
+	}
+	else if (currentMode == CameraMode::FIRST_PERSON) {
+		// Cameră pe kart (perspectiva șoferului)
+		glm::vec3 cameraPosition = targetKartPosition + glm::vec3(0.0f, 3.3f, -0.7f); // Poziție ușor deasupra solului
+		return glm::lookAt(cameraPosition, cameraPosition + kartForward, worldUp);
+	}
+	return glm::mat4(1.0f);
 }
 
 const glm::vec3 Camera::GetPosition() const
@@ -127,6 +147,12 @@ void Camera::ProcessMouseScroll(float yOffset)
 		FoVy = 1.0f;
 	if (FoVy >= 90.0f)
 		FoVy = 90.0f;
+}
+
+void Camera::UpdateKartPosition(const glm::vec3& position, const glm::vec3& forwardVector)
+{
+	targetKartPosition = position;
+	kartForward = forwardVector;
 }
 
 void Camera::ProcessMouseMovement(float xOffset, float yOffset, bool constrainPitch)

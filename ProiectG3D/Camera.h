@@ -17,14 +17,23 @@
 #pragma comment (lib, "glew32.lib")
 #pragma comment (lib, "OpenGL32.lib")
 
+enum class CameraMode {
+    FREE,
+	FIRST_PERSON,
+	THIRD_PERSON
+};
+
 class Camera
 {
     const float zNEAR = 0.1f;
-    const float zFAR = 500.f;
+    const float zFAR = 2500.f;
     const float YAW = -90.0f;
     const float PITCH = 0.0f;
     const float FOV = 45.0f;
     glm::vec3 startPosition;
+	glm::vec3 targetKartPosition;
+	glm::vec3 kartForward;
+	CameraMode currentMode;
 
 protected:
     const float cameraSpeedFactor = 9.5f;
@@ -53,8 +62,9 @@ protected:
 
 public:
 
-    Camera(const int width, const int height, const glm::vec3& position);
+    Camera(const int width, const int height, const glm::vec3& position, CameraMode mode = CameraMode::FREE);
     void Set(const int width, const int height, const glm::vec3& position);
+	void SetCameraMode(CameraMode mode);
     void Reset(int width, int height);
     void Reshape(int width, int height);
     const glm::mat4 GetViewMatrix() const;
@@ -63,6 +73,7 @@ public:
     void ProcessKeyboard(CameraMovementType direction, float deltaTime);
     void MouseControl(float xpos, float ypos);
     void ProcessMouseScroll(float yOffset);
+    void UpdateKartPosition(const glm::vec3& position, const glm::vec3& forwardVector);
 
 private:
 

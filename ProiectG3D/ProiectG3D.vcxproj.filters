@@ -36,6 +36,12 @@
     <ClCompile Include="SkyBox.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Pilot.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ShaderManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h">
@@ -65,6 +71,12 @@
     <ClInclude Include="SkyBox.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Pilot.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ShaderManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -90,6 +102,12 @@
       <Filter>Resource Files</Filter>
     </None>
     <None Include="..\Shaders\SkyBox.vs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\Shaders\ShadowMappingDepth.fs">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\Shaders\ShadowMappingDepth.vs">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>

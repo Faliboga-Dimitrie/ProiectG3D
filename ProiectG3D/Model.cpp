@@ -114,7 +114,7 @@ Mesh Model::processMesh(std::string nodeName, aiMesh* mesh, const aiScene* scene
     vector<Texture> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
     textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
 
-    std::vector<Texture> normalMaps = loadMaterialTextures(material, aiTextureType_HEIGHT, "texture_normal");
+    std::vector<Texture> normalMaps = loadMaterialTextures(material, aiTextureType_NORMALS, "texture_normal");
     textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
     
     std::vector<Texture> heightMaps = loadMaterialTextures(material, aiTextureType_AMBIENT, "texture_height");
@@ -189,6 +189,11 @@ unsigned int TextureFromFile(const char* path, const string& directory, bool gam
     {
         std::cout << "Texture failed to load at path: " << path << std::endl;
         stbi_image_free(data);
+
+        // Op?ional: po?i crea o texturã albã implicitã.
+        glBindTexture(GL_TEXTURE_2D, textureID);
+        unsigned char whitePixel[3] = { 255, 255, 255 };
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, whitePixel);
     }
 
     return textureID;

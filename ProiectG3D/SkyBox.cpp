@@ -6,15 +6,16 @@ SkyBox::SkyBox(const std::string& Dir, const std::string& PosXFilename, const st
     cubemapTexture->Load();
 
     float skyboxVertices[] = {
-        -1.0f, -1.0f,  1.0f,
-         1.0f, -1.0f,  1.0f,
-         1.0f, -1.0f, -1.0f,
-        -1.0f, -1.0f, -1.0f,
-        -1.0f,  1.0f,  1.0f,
-         1.0f,  1.0f,  1.0f,
-         1.0f,  1.0f, -1.0f,
-        -1.0f,  1.0f, -1.0f,
+    -10.0f, -10.0f,  10.0f,
+     10.0f, -10.0f,  10.0f,
+     10.0f, -10.0f, -10.0f,
+    -10.0f, -10.0f, -10.0f,
+    -10.0f,  10.0f,  10.0f,
+     10.0f,  10.0f,  10.0f,
+     10.0f,  10.0f, -10.0f,
+    -10.0f,  10.0f, -10.0f,
     };
+
 
 	unsigned int skyboxIndices[] = {
 		//Right face

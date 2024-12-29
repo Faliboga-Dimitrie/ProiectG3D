@@ -138,6 +138,7 @@
     <ClCompile Include="Pilot.cpp" />
     <ClCompile Include="ProiectG3D.cpp" />
     <ClCompile Include="Shader.cpp" />
+    <ClCompile Include="ShaderManager.cpp" />
     <ClCompile Include="SkyBox.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -148,6 +149,7 @@
     <ClInclude Include="Model.h" />
     <ClInclude Include="Pilot.h" />
     <ClInclude Include="Shader.h" />
+    <ClInclude Include="ShaderManager.h" />
     <ClInclude Include="SkyBox.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="Vertex.h" />
@@ -159,6 +161,8 @@
     <None Include="..\Shaders\PhongLight.vs" />
     <None Include="..\Shaders\PhongLightWithTexture.fs" />
     <None Include="..\Shaders\PhongLightWithTexture.vs" />
+    <None Include="..\Shaders\ShadowMappingDepth.fs" />
+    <None Include="..\Shaders\ShadowMappingDepth.vs" />
     <None Include="..\Shaders\SkyBox.fs" />
     <None Include="..\Shaders\SkyBox.vs" />
     <None Include="packages.config" />
