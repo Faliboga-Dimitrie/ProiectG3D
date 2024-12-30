@@ -75,6 +75,8 @@ public:
     void ProcessMouseScroll(float yOffset);
     void UpdateKartPosition(const glm::vec3& position, const glm::vec3& forwardVector);
 
+    CameraMode GetCameraMode() const;
+
 private:
 
     void ProcessMouseMovement(float xOffset, float yOffset, bool constrainPitch = true);

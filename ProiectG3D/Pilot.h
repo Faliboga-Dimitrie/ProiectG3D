@@ -5,6 +5,8 @@
 
 class Pilot : public Model {
 public:
+
+	Pilot() = default;
     // Constructorul clasei Pilot
     Pilot(std::string const& path, bool bSmoothNormals = false, bool gamma = false);
 

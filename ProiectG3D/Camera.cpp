@@ -155,6 +155,11 @@ void Camera::UpdateKartPosition(const glm::vec3& position, const glm::vec3& forw
 	kartForward = forwardVector;
 }
 
+CameraMode Camera::GetCameraMode() const
+{
+	return currentMode;
+}
+
 void Camera::ProcessMouseMovement(float xOffset, float yOffset, bool constrainPitch)
 {
 	yaw += xOffset;
