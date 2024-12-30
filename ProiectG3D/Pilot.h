@@ -9,7 +9,7 @@ public:
     Pilot(std::string const& path, bool bSmoothNormals = false, bool gamma = false);
 
     // Metodă pentru a seta poziția pilotului în funcție de poziția kart-ului
-    void UpdatePosition(const glm::vec3& kartPosition);
+    void UpdatePosition(const glm::vec3& kartPosition, float kartRotationAngle);
 
     // Suprascrie metoda Draw pentru a desena pilotul
     void Draw(Shader& shader) override;
