@@ -57,13 +57,13 @@ const glm::mat4 Camera::GetViewMatrix() const
 	}
 	else if (currentMode == CameraMode::THIRD_PERSON) {
 		// Cameră în spatele kart-ului
-		glm::vec3 offset = glm::vec3(0.0f, 8.125f, -30.0f);
+		glm::vec3 offset = glm::vec3(0.0f, 5.7f, -20.0f);
 		glm::vec3 cameraPosition = targetKartPosition + kartForward * offset.z + glm::vec3(0.0f, offset.y, 0.0f);
 		return glm::lookAt(cameraPosition, targetKartPosition, worldUp);
 	}
 	else if (currentMode == CameraMode::FIRST_PERSON) {
 		// Cameră pe kart (perspectiva șoferului)
-		glm::vec3 cameraPosition = targetKartPosition + glm::vec3(0.0f, 3.3f, -0.7f); // Poziție ușor deasupra solului
+		glm::vec3 cameraPosition = targetKartPosition + glm::vec3(0.0f, 3.3f, -0.1f); // Poziție ușor deasupra solului
 		return glm::lookAt(cameraPosition, cameraPosition + kartForward, worldUp);
 	}
 	return glm::mat4(1.0f);
