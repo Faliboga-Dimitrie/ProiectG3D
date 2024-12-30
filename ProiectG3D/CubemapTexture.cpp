@@ -52,24 +52,49 @@ bool CubemapTexture::Load()
 	void* pData = nullptr;
 	int BPP;
 
-	for (int i{ 0 }; i < 6; i++)
+	for (int i = 0; i < 6; i++) 
 	{
 		pData = nullptr;
 		stbi_set_flip_vertically_on_load(false);
 		unsigned char* pImageData = stbi_load(m_fileNames[i].c_str(), &width, &height, &BPP, 0);
-		if (pImageData == nullptr)
-		{
+		if (pImageData == nullptr) {
+			std::cerr << "Failed to load texture: " << m_fileNames[i] << std::endl;
 			return false;
 		}
 
-		pData = pImageData;
+		unsigned char* rotatedData = nullptr;
+
+		if (i == 2 || i == 3) 
+		{
+			rotatedData = new unsigned char[width * height * BPP];
+			for (int y = 0; y < height; y++) 
+			{
+				for (int x = 0; x < width; x++)
+				{
+					for (int c = 0; c < BPP; c++)
+					{
+						int srcIndex = (y * width + x) * BPP + c;
+						int destIndex = ((height - 1 - y) * width + (width - 1 - x)) * BPP + c;
+
+						rotatedData[destIndex] = pImageData[srcIndex];
+					}
+				}
+			}
+		}
+		else {
+			rotatedData = pImageData;
+		}
 
 		GLenum format = (BPP == 3) ? GL_RGB : GL_RGBA;
-		glTexImage2D(types[i], 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, pData);
+		glTexImage2D(types[i], 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, rotatedData);
 
+		if (rotatedData != pImageData) {
+			delete[] rotatedData;
+		}
 		stbi_image_free(pImageData);
 	}
 
+	
 	return true;
 }
 

@@ -57,7 +57,7 @@ const glm::mat4 Camera::GetViewMatrix() const
 	}
 	else if (currentMode == CameraMode::THIRD_PERSON) {
 		// Cameră în spatele kart-ului
-		glm::vec3 offset = glm::vec3(0.0f, 10.0f, -18.0f);
+		glm::vec3 offset = glm::vec3(0.0f, 8.125f, -30.0f);
 		glm::vec3 cameraPosition = targetKartPosition + kartForward * offset.z + glm::vec3(0.0f, offset.y, 0.0f);
 		return glm::lookAt(cameraPosition, targetKartPosition, worldUp);
 	}

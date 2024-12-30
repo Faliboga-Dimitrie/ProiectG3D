@@ -24,12 +24,13 @@ SkyBox::SkyBox(const std::string& Dir, const std::string& PosXFilename, const st
 		//Left face
 		0, 4, 7,
 		7, 3, 0,
-		//Top face
-		4, 5, 6,
-		6, 7, 4,
-		//Bottom face
-		0, 3, 2,
-		2, 1, 0,
+        // Inversare top face
+        4, 7, 6,
+        6, 5, 4,
+
+        // Inversare bottom face
+        0, 1, 2,
+        2, 3, 0,
         //Back face
         0, 1, 5,
         5, 4, 0,
