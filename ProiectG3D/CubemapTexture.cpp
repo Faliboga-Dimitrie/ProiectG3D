@@ -62,35 +62,11 @@ bool CubemapTexture::Load()
 			return false;
 		}
 
-		unsigned char* rotatedData = nullptr;
-
-		if (i == 2 || i == 3) 
-		{
-			rotatedData = new unsigned char[width * height * BPP];
-			for (int y = 0; y < height; y++) 
-			{
-				for (int x = 0; x < width; x++)
-				{
-					for (int c = 0; c < BPP; c++)
-					{
-						int srcIndex = (y * width + x) * BPP + c;
-						int destIndex = ((height - 1 - y) * width + (width - 1 - x)) * BPP + c;
-
-						rotatedData[destIndex] = pImageData[srcIndex];
-					}
-				}
-			}
-		}
-		else {
-			rotatedData = pImageData;
-		}
+		pData = pImageData;
 
 		GLenum format = (BPP == 3) ? GL_RGB : GL_RGBA;
-		glTexImage2D(types[i], 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, rotatedData);
+		glTexImage2D(types[i], 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, pData);
 
-		if (rotatedData != pImageData) {
-			delete[] rotatedData;
-		}
 		stbi_image_free(pImageData);
 	}
 
