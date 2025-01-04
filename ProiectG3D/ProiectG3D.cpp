@@ -4,6 +4,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <xmemory>
 
 #include "ShaderManager.h"
 #include "Model.h"
@@ -15,36 +16,34 @@
 
 // settings
 
-Camera* pCamera = nullptr;
-SkyBox* skybox = nullptr;
+std::shared_ptr<Camera> pCamera = nullptr;
+std::shared_ptr<SkyBox> skybox = nullptr;
 
 struct Kart {
 	glm::vec3 position;
+	glm::vec3 kartDirection;
 	float rotationAngle;
 	float kartAcceleration;
 	Model kartModel;
-	Pilot pilotModel;
-	bool isCurrentPlayer;
+	std::shared_ptr<Pilot> pilotModel;
+	bool isCurrentPlayer = false;
+	bool kartAccelerationChanged = false;
 
 	Kart() = default;
 };
-
-void Cleanup()
-{
-	delete pCamera;
-}
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow* window);
-void RenderScene(ShaderManager& shaderManager, std::unordered_map<std::string,Model> models, std::vector<Kart>& karts, SkyBox* skyBoxInstance);
-void RenderSkybox(Shader& shader,SkyBox* skyBoxInstance);
+void RenderScene(ShaderManager& shaderManager, std::unordered_map<std::string,Model>& models, std::vector<Kart>& karts, std::shared_ptr<SkyBox> skyBoxInstance);
+void RenderSkybox(Shader& shader,std::shared_ptr<SkyBox> skyBoxInstance);
 void RenderTrack(Shader& shader, Model& model);
 void RenderKarts(Shader& shader, std::vector<Kart>& karts);
 void RenderTerrain(Shader& shader, Model& model);
-void LoadMultipleKarts(std::vector<Kart>& karts, std::unordered_map<std::string, Model>& models, Pilot& pilot);
-void UpdateKarts(std::vector<Kart>& karts, glm::vec3 kartPos);
+void LoadMultipleKarts(std::vector<Kart>& karts, std::unordered_map<std::string, Model>& models, std::shared_ptr<Pilot> pilot);
+bool checkCollision(const Kart& kart1, const Kart& kart2);
+void handleCollision(Kart& kart1, Kart& kart2);
 
 // timing
 double deltaTime = 0.0f;	// time between current frame and last frame
@@ -64,7 +63,7 @@ float kartAccelerationRate = 20.0f; // Rata de accelerare
 float kartDecelerationRate = 5.0f; // Rata de decelerare
 
 int currentKartIndex = 5; // Indexul următorului kart
-int lastKartIndex = 0; // Indexul kart-ului anterior
+int lastKartIndex = -1; // Indexul kart-ului anterior
 
 std::vector<Kart> karts;
 
@@ -101,7 +100,7 @@ int main()
 
 	glEnable(GL_DEPTH_TEST);
 
-	pCamera = new Camera(mode->width, mode->height, glm::vec3(0.0, 2.0, 6.0));
+	pCamera = std::make_shared<Camera>(mode->width, mode->height, glm::vec3(0.0, 2.0, 6.0));
 
 	glm::vec3 cubePos(0.0f, 5.0f, 1.0f);
 
@@ -114,7 +113,7 @@ int main()
 	std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
 	std::string currentPath = converter.to_bytes(wscurrentPath);
 
-	SkyBox* skybox = new SkyBox(currentPath + "\\Textures\\SkyBox\\", "back.jpg", "front.jpg", "top.jpg", "bottom.jpg", "left.jpg", "right.jpg");
+	skybox = std::make_shared<SkyBox>(currentPath + "\\Textures\\SkyBox\\", "back.jpg", "front.jpg", "top.jpg", "bottom.jpg", "left.jpg", "right.jpg");
 
 	shaderManager.LoadShader("lightingShader", currentPath + "\\Shaders\\PhongLight.vs", currentPath + "\\Shaders\\PhongLight.fs");
 	shaderManager.LoadShader("lightingWithTextureShader", currentPath + "\\Shaders\\PhongLightWithTexture.vs", currentPath + "\\Shaders\\PhongLightWithTexture.fs");
@@ -127,7 +126,7 @@ int main()
 	models["go_kart"] = go_kartObjModel;
 
 	std::string pilotObjFileName = (currentPath + "\\Models\\Pilot\\pilot.obj");
-	Pilot PilotModel(pilotObjFileName, false);
+	std::shared_ptr<Pilot> PilotModel = std::make_shared<Pilot>(pilotObjFileName, false);
 
 	LoadMultipleKarts(karts, models, PilotModel);
 
@@ -165,8 +164,6 @@ int main()
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
-
-	Cleanup();
 
 	/*glDeleteVertexArrays(1, &cubeVAO);
 	glDeleteVertexArrays(1, &lightVAO);
@@ -209,68 +206,75 @@ void processInput(GLFWwindow* window)
 	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
 		pCamera->ProcessKeyboard(CameraMovementType::DOWN, (float)deltaTime);
 
-	glm::vec3 kartDirection(sin(glm::radians(karts[currentKartIndex].rotationAngle)), 0.0f, cos(glm::radians(karts[currentKartIndex].rotationAngle)));
+	//Parcurgem toate kart-urile pentru a aplica decelerarea
+	for (size_t i = 0; i < karts.size(); ++i) {
+		auto& kart = karts[i]; // Referință la kart-ul curent
+
+		if (kart.kartAcceleration > 0.0f) {
+			kart.kartAccelerationChanged = true;
+			kart.kartAcceleration -= kartDecelerationRate * static_cast<float>(deltaTime);
+			if (kart.kartAcceleration < 0.0f)
+				kart.kartAcceleration = 0.0f;
+		}
+		else if (kart.kartAcceleration < 0.0f) {
+			kart.kartAccelerationChanged = true;
+			kart.kartAcceleration += kartDecelerationRate * static_cast<float>(deltaTime);
+			if (kart.kartAcceleration > 0.0f)
+				kart.kartAcceleration = 0.0f;
+		}
+		else {
+			kart.kartAccelerationChanged = false;
+		}
+			
+
+		if (kart.kartAccelerationChanged)
+		{
+			glm::vec3 kartDirection = glm::vec3(
+				sin(glm::radians(kart.rotationAngle)),
+				0.0f,
+				cos(glm::radians(kart.rotationAngle))
+			);
+
+			kart.position += kartDirection * kart.kartAcceleration * static_cast<float>(deltaTime);
+		}		
+	}
+
+	// Aplicați mișcările doar pentru kart-ul curent
+	glm::vec3 kartDirection(
+		sin(glm::radians(karts[currentKartIndex].rotationAngle)),
+		0.0f,
+		cos(glm::radians(karts[currentKartIndex].rotationAngle))
+	);
 
 	// Mișcare înainte
 	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
-		karts[currentKartIndex].kartAcceleration += kartAccelerationRate * (float)deltaTime;
+		karts[currentKartIndex].kartAcceleration += kartAccelerationRate * static_cast<float>(deltaTime);
 		if (karts[currentKartIndex].kartAcceleration > kartMaxSpeed)
 			karts[currentKartIndex].kartAcceleration = kartMaxSpeed;
 	}
 
 	// Mișcare înapoi
 	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
-		karts[currentKartIndex].kartAcceleration -= kartAccelerationRate * (float)deltaTime;
+		karts[currentKartIndex].kartAcceleration -= kartAccelerationRate * static_cast<float>(deltaTime);
 		if (karts[currentKartIndex].kartAcceleration < -kartMaxSpeed / 2.0f)
 			karts[currentKartIndex].kartAcceleration = -kartMaxSpeed / 2.0f;
 	}
 
-	karts[currentKartIndex].position += kartDirection * karts[currentKartIndex].kartAcceleration * (float)deltaTime;
-
+	// Actualizează poziția kart-ului curent
+	karts[currentKartIndex].position += kartDirection * karts[currentKartIndex].kartAcceleration * static_cast<float>(deltaTime);
 
 	// Rotație la stânga
 	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
 		float rotationFactor = (karts[currentKartIndex].kartAcceleration >= 0.0f) ? 1.0f : -1.0f; // Schimbă sensul rotației
-		karts[currentKartIndex].rotationAngle += kartRotationSpeed * rotationFactor * (float)deltaTime;
+		karts[currentKartIndex].rotationAngle += kartRotationSpeed * rotationFactor * static_cast<float>(deltaTime);
 	}
 
 	// Rotație la dreapta
 	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
 		float rotationFactor = (karts[currentKartIndex].kartAcceleration >= 0.0f) ? 1.0f : -1.0f; // Schimbă sensul rotației
-		karts[currentKartIndex].rotationAngle -= kartRotationSpeed * rotationFactor * (float)deltaTime;
+		karts[currentKartIndex].rotationAngle -= kartRotationSpeed * rotationFactor * static_cast<float>(deltaTime);
 	}
 
-	// Decelerare naturală
-	if (karts[currentKartIndex].kartAcceleration > 0.0f) {
-		karts[currentKartIndex].kartAcceleration -= kartDecelerationRate * (float)deltaTime;
-		if (karts[currentKartIndex].kartAcceleration < 0.0f)
-			karts[currentKartIndex].kartAcceleration = 0.0f;
-	}
-	else if (karts[currentKartIndex].kartAcceleration < 0.0f) {
-		karts[currentKartIndex].kartAcceleration += kartDecelerationRate * (float)deltaTime;
-		if (karts[currentKartIndex].kartAcceleration > 0.0f)
-			karts[currentKartIndex].kartAcceleration = 0.0f;
-	}
-
-	//if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-	//	kartPos.z += kartSpeed * (float)deltaTime;  // Mișcare înainte
-
-	//if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-	//	kartPos.z -= kartSpeed * (float)deltaTime;  // Mișcare înapoi
-
-	//if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
-	//	kartRotationAngle += kartRotationSpeed * (float)deltaTime; // Rotește la stânga
-
-	//if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-	//	kartRotationAngle -= kartRotationSpeed * (float)deltaTime; // Rotește la dreapta
-
-	/*
-	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
-		kartPos.x += kartSpeed * (float)deltaTime;  // Mișcare la stânga
-
-	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-		kartPos.x -= kartSpeed * (float)deltaTime;  // Mișcare la dreapta
-	*/
 	if (glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS)
 		pCamera->SetCameraMode(CameraMode::FREE);  // Mișcare libera a camerei
 
@@ -311,7 +315,7 @@ void processInput(GLFWwindow* window)
 	}
 }
 
-void RenderScene(ShaderManager& shaderManager, std::unordered_map<std::string, Model> models, std::vector<Kart>& karts, SkyBox* skyBoxInstance)
+void RenderScene(ShaderManager& shaderManager, std::unordered_map<std::string, Model>& models, std::vector<Kart>& karts, std::shared_ptr<SkyBox> skyBoxInstance)
 {
 	RenderSkybox(shaderManager.GetShader("skyboxShader"),skyBoxInstance);
 	RenderKarts(shaderManager.GetShader("lightingWithTextureShader"),karts);
@@ -319,7 +323,7 @@ void RenderScene(ShaderManager& shaderManager, std::unordered_map<std::string, M
 	RenderTerrain(shaderManager.GetShader("lightingWithTextureShader"), models.at("terrain"));
 }
 
-void RenderSkybox(Shader& shader, SkyBox* skyBoxInstance)
+void RenderSkybox(Shader& shader, std::shared_ptr<SkyBox> skyBoxInstance)
 {
 	shader.use();
 	shader.setMat4("projection", pCamera->GetProjectionMatrix());
@@ -342,7 +346,7 @@ void RenderKarts(Shader& shader, std::vector<Kart>& karts)
 	karts[currentKartIndex].isCurrentPlayer = true;
 
 	// Resetează kart-urile anterioare
-	if (currentKartIndex != lastKartIndex)
+	if (currentKartIndex != lastKartIndex && lastKartIndex >= 0)
 		karts[lastKartIndex].isCurrentPlayer = false;
 
 	// Itierează prin toate karturile și pilotele
@@ -362,17 +366,16 @@ void RenderKarts(Shader& shader, std::vector<Kart>& karts)
 
 		if (kart.isCurrentPlayer)
 		{
-			kart.pilotModel.UpdatePosition(kart.position, kart.rotationAngle);
+			kart.pilotModel->UpdatePosition(kart.position, kart.rotationAngle);
 			glm::mat4 pilotModel = glm::mat4(1.0f);
 			pilotModel = glm::translate(pilotModel, glm::vec3(0.0f, 1.2f, 0.0f)); // Poziționează pilotul în kart
 			pilotModel = go_kartModel * pilotModel; // Aplică rotația kart-ului la pilot
 			pilotModel = glm::scale(pilotModel, glm::vec3(0.02f)); // Ajustează scala pilotului
 			shader.setMat4("model", pilotModel);
-			kart.pilotModel.Draw(shader);
+			kart.pilotModel->Draw(shader);
 		}
 	}
 }
-
 
 void RenderTerrain(Shader& shader, Model& model)
 {
@@ -393,14 +396,13 @@ void RenderTerrain(Shader& shader, Model& model)
 	model.Draw(shader);
 }
 
-void LoadMultipleKarts(std::vector<Kart>& karts, std::unordered_map<std::string, Model>& models, Pilot& pilot)
+void LoadMultipleKarts(std::vector<Kart>& karts, std::unordered_map<std::string, Model>& models, std::shared_ptr<Pilot> pilot)
 {
 	Kart kart1;
 	kart1.position = kartPos + glm::vec3(0.0f, 0.0f, 0.0f);
 	kart1.rotationAngle = kartRotationAngle + 0.0f;
 	kart1.kartModel = models.at("go_kart");
 	kart1.pilotModel = pilot;
-	kart1.isCurrentPlayer = false;
 	kart1.kartAcceleration = kartAcceleration;
 	karts.push_back(kart1);
 
@@ -409,7 +411,6 @@ void LoadMultipleKarts(std::vector<Kart>& karts, std::unordered_map<std::string,
 	kart2.rotationAngle = kartRotationAngle + 0.0f;
 	kart2.kartModel = models.at("go_kart");
 	kart2.pilotModel = pilot;
-	kart2.isCurrentPlayer = false;
 	kart2.kartAcceleration = kartAcceleration;
 	karts.push_back(kart2);
 
@@ -418,7 +419,6 @@ void LoadMultipleKarts(std::vector<Kart>& karts, std::unordered_map<std::string,
 	kart3.rotationAngle = kartRotationAngle + 180.0f;
 	kart3.kartModel = models.at("go_kart");
 	kart3.pilotModel = pilot;
-	kart3.isCurrentPlayer = false;
 	kart3.kartAcceleration = kartAcceleration;
 	karts.push_back(kart3);
 
@@ -427,7 +427,6 @@ void LoadMultipleKarts(std::vector<Kart>& karts, std::unordered_map<std::string,
 	kart4.rotationAngle = kartRotationAngle + 180.0f;
 	kart4.kartModel = models.at("go_kart");
 	kart4.pilotModel = pilot;
-	kart4.isCurrentPlayer = false;
 	kart4.kartAcceleration = kartAcceleration;
 	karts.push_back(kart4);
 
@@ -436,7 +435,6 @@ void LoadMultipleKarts(std::vector<Kart>& karts, std::unordered_map<std::string,
 	kart5.rotationAngle = kartRotationAngle + 0.0f;
 	kart5.kartModel = models.at("go_kart");
 	kart5.pilotModel = pilot;
-	kart5.isCurrentPlayer = false;
 	kart5.kartAcceleration = kartAcceleration;
 	karts.push_back(kart5);
 
@@ -445,7 +443,6 @@ void LoadMultipleKarts(std::vector<Kart>& karts, std::unordered_map<std::string,
 	kart6.rotationAngle = kartRotationAngle + 0.0f;
 	kart6.kartModel = models.at("go_kart");
 	kart6.pilotModel = pilot;
-	kart6.isCurrentPlayer = false;
 	kart6.kartAcceleration = kartAcceleration;
 	karts.push_back(kart6);
 
@@ -454,7 +451,6 @@ void LoadMultipleKarts(std::vector<Kart>& karts, std::unordered_map<std::string,
 	kart7.rotationAngle = kartRotationAngle + 180.0f;
 	kart7.kartModel = models.at("go_kart");
 	kart7.pilotModel = pilot;
-	kart7.isCurrentPlayer = false;
 	kart7.kartAcceleration = kartAcceleration;
 	karts.push_back(kart7);
 
@@ -463,7 +459,6 @@ void LoadMultipleKarts(std::vector<Kart>& karts, std::unordered_map<std::string,
 	kart8.rotationAngle = kartRotationAngle + 180.0f;
 	kart8.kartModel = models.at("go_kart");
 	kart8.pilotModel = pilot;
-	kart8.isCurrentPlayer = false;
 	kart8.kartAcceleration = kartAcceleration;
 	karts.push_back(kart8);
 
@@ -472,7 +467,6 @@ void LoadMultipleKarts(std::vector<Kart>& karts, std::unordered_map<std::string,
 	kart9.rotationAngle = kartRotationAngle + 0.0f;
 	kart9.kartModel = models.at("go_kart");
 	kart9.pilotModel = pilot;
-	kart9.isCurrentPlayer = false;
 	kart9.kartAcceleration = kartAcceleration;
 	karts.push_back(kart9);
 
@@ -481,7 +475,6 @@ void LoadMultipleKarts(std::vector<Kart>& karts, std::unordered_map<std::string,
 	kart10.rotationAngle = kartRotationAngle + 0.0f;
 	kart10.kartModel = models.at("go_kart");
 	kart10.pilotModel = pilot;
-	kart10.isCurrentPlayer = false;
 	kart10.kartAcceleration = kartAcceleration;
 	karts.push_back(kart10);
 
@@ -490,7 +483,6 @@ void LoadMultipleKarts(std::vector<Kart>& karts, std::unordered_map<std::string,
 	kart11.rotationAngle = kartRotationAngle + 180.0f;
 	kart11.kartModel = models.at("go_kart");
 	kart11.pilotModel = pilot;
-	kart11.isCurrentPlayer = false;
 	kart11.kartAcceleration = kartAcceleration;
 	karts.push_back(kart11);
 
@@ -499,9 +491,53 @@ void LoadMultipleKarts(std::vector<Kart>& karts, std::unordered_map<std::string,
 	kart12.rotationAngle = kartRotationAngle + 180.0f;
 	kart12.kartModel = models.at("go_kart");
 	kart12.pilotModel = pilot;
-	kart12.isCurrentPlayer = false;
 	kart12.kartAcceleration = kartAcceleration;
 	karts.push_back(kart12);
+}
+
+bool checkCollision(const Kart& kart1, const Kart& kart2)
+{
+	glm::vec3 kart1Center = kart1.position + kart1.kartModel.boundingSphereCenter;
+	glm::vec3 kart2Center = kart2.position + kart2.kartModel.boundingSphereCenter;
+
+	float kart1Radius = kart1.kartModel.boundingSphereRadius;
+	float kart2Radius = kart2.kartModel.boundingSphereRadius;
+
+	float distance = glm::distance(kart1Center, kart2Center);
+
+	return distance <= (kart1Radius + kart2Radius);
+}
+
+void handleCollision(Kart& kart1, Kart& kart2) {
+	// Presupunem că fiecare kart are o masă constantă (de exemplu 1.0f)
+	float mass1 = 1.0f;
+	float mass2 = 1.0f;
+
+	// Calculăm viteza curentă pe baza accelerației și direcției
+	glm::vec3 velocity1 = kart1.kartDirection * kart1.kartAcceleration;
+	glm::vec3 velocity2 = kart2.kartDirection * kart2.kartAcceleration;
+
+	// Momentul fiecărui kart
+	glm::vec3 momentum1 = mass1 * velocity1;
+	glm::vec3 momentum2 = mass2 * velocity2;
+
+	// Conservarea momentului: calculăm viteza finală combinată
+	glm::vec3 totalMomentum = momentum1 + momentum2;
+
+	// Coeficient de coliziune elastică (poți ajusta acest coeficient pentru diferite efecte)
+	float restitution = 0.8f; // Coeficient de restaurare (elasticitate)
+
+	// Aplicați efectul coliziunii asupra fiecărei viteze
+	glm::vec3 newVelocity1 = totalMomentum / mass1 * restitution;
+	glm::vec3 newVelocity2 = totalMomentum / mass2 * restitution;
+
+	// Actualizează direcțiile karturilor
+	kart1.kartDirection = glm::normalize(newVelocity1);
+	kart2.kartDirection = glm::normalize(newVelocity2);
+
+	// Actualizează accelerațiile (viteza)
+	kart1.kartAcceleration = glm::length(newVelocity1);
+	kart2.kartAcceleration = glm::length(newVelocity2);
 }
 
 void RenderTrack(Shader& shader, Model& model)
