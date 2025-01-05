@@ -246,9 +246,8 @@ void processInput(GLFWwindow* window)
 		for (size_t j = i + 1; j < karts.size(); ++j) { // Iterăm doar peste perechile de karturi neverificate
 			if (checkCollision(karts[i], karts[j])) {
 				handleCollision(karts[i], karts[j]);
-				karts[i].position += karts[i].kartDirection * karts[i].kartAcceleration * static_cast<float>(deltaTime);
-				karts[j].position += karts[j].kartDirection * karts[j].kartAcceleration * static_cast<float>(deltaTime);
-				std::cout << "Collision detected between Kart " << i << " and Kart " << j << std::endl;
+				karts[i].position -= karts[i].kartDirection * karts[i].kartAcceleration * static_cast<float>(deltaTime);
+				karts[j].position -= karts[j].kartDirection * karts[j].kartAcceleration * static_cast<float>(deltaTime);
 			}
 		}
 	}
@@ -502,7 +501,7 @@ void handleCollision(Kart& kart1, Kart& kart2) {
 	glm::vec3 velocity1 = kart1.kartDirection * kart1.kartAcceleration;
 	glm::vec3 velocity2 = kart2.kartDirection * kart2.kartAcceleration;
 
-	// **Înghețăm componenta y**
+	// Înghețăm componenta y
 	velocity1.y = 0.0f;
 	velocity2.y = 0.0f;
 
@@ -513,7 +512,7 @@ void handleCollision(Kart& kart1, Kart& kart2) {
 	// Conservarea momentului: calculăm viteza finală combinată
 	glm::vec3 totalMomentum = momentum1 + momentum2;
 
-	// Coeficient de coliziune elastică (poți ajusta acest coeficient pentru diferite efecte)
+	// Coeficient de coliziune elastică
 	float restitution = 0.8f; // Coeficient de restaurare (elasticitate)
 
 	// Aplicați efectul coliziunii asupra fiecărei viteze
@@ -524,7 +523,6 @@ void handleCollision(Kart& kart1, Kart& kart2) {
 	kart1.kartDirection = glm::normalize(newVelocity1);
 	kart2.kartDirection = glm::normalize(newVelocity2);
 
-
 	// Actualizează accelerațiile (viteza)
 	kart1.kartAcceleration = std::min(glm::length(newVelocity1), kartMaxSpeed);
 	kart2.kartAcceleration = std::min(glm::length(newVelocity2), kartMaxSpeed);
@@ -532,18 +530,60 @@ void handleCollision(Kart& kart1, Kart& kart2) {
 	// **Adăugarea distanțării pentru a evita suprapunerea completă**
 	glm::vec3 separationVector = kart1.position - kart2.position;
 	float distance = glm::length(separationVector);
-	float maxCollisionDistance1 = 2.6 * maxCollisionDistance; // Distanța maximă de coliziune
-	float minDistance = std::min(kart1.kartModel.boundingSphereRadius + kart2.kartModel.boundingSphereRadius, maxCollisionDistance1);// Suma razelor celor două karturi
+	float maxCollisionDistance1 = 2.6 * maxCollisionDistance;
+	float minDistance = std::min(kart1.kartModel.boundingSphereRadius + kart2.kartModel.boundingSphereRadius, maxCollisionDistance1);
 
 	if (distance < minDistance) {
-		// Calculăm distanța de separare necesară
-		glm::vec3 separation = glm::normalize(separationVector) * (minDistance - distance);
+		glm::vec3 separation = glm::normalize(separationVector);
+		glm::vec3 combinedDirection = glm::normalize(kart1.kartDirection + kart2.kartDirection);
+		separation = glm::normalize(separation + combinedDirection) * (minDistance - distance);
 
 		// Separă karturile pentru a evita suprapunerea
 		kart1.position += separation * 0.5f; // Separă kartul 1
 		kart2.position -= separation * 0.5f; // Separă kartul 2
+
+		float rotationFactor = 5.0f;  // Factor de rotație
+
+		// **Rotirea kartului care a suferit coliziunea**
+		if (!kart1.isCurrentPlayer) {
+			float dotProduct1 = glm::dot(kart1.kartDirection, separation);
+			if (dotProduct1 > 0.0f) {
+				kart1.rotationAngle += glm::abs(dotProduct1) * rotationFactor;
+			}
+			else {
+				kart1.rotationAngle -= glm::abs(dotProduct1) * rotationFactor;
+			}
+
+			glm::vec3 kartDirection = glm::vec3(
+				sin(glm::radians(kart1.rotationAngle)),
+				0.0f,
+				cos(glm::radians(kart1.rotationAngle))
+			);
+			kart1.kartDirection = glm::normalize(kartDirection);
+		}
+		else
+		{
+			float dotProduct2 = glm::dot(kart2.kartDirection, separation);
+			if (dotProduct2 > 0.0f) {
+				kart2.rotationAngle += glm::abs(dotProduct2) * rotationFactor;
+			}
+			else {
+				kart2.rotationAngle -= glm::abs(dotProduct2) * rotationFactor;
+			}
+
+			glm::vec3 kartDirection = glm::vec3(
+				sin(glm::radians(kart2.rotationAngle)),
+				0.0f,
+				cos(glm::radians(kart2.rotationAngle))
+			);
+
+			kart2.kartDirection = glm::normalize(kartDirection);
+		}
 	}
 }
+
+
+
 
 
 void RenderTrack(Shader& shader, Model& model)
