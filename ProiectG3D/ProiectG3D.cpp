@@ -527,7 +527,7 @@ void handleCollision(Kart& kart1, Kart& kart2) {
 	kart1.kartAcceleration = std::min(glm::length(newVelocity1), kartMaxSpeed);
 	kart2.kartAcceleration = std::min(glm::length(newVelocity2), kartMaxSpeed);
 
-	// **Adăugarea distanțării pentru a evita suprapunerea completă**
+	// Adăugarea distanțării pentru a evita suprapunerea completă
 	glm::vec3 separationVector = kart1.position - kart2.position;
 	float distance = glm::length(separationVector);
 	float maxCollisionDistance1 = 2.6 * maxCollisionDistance;
@@ -544,7 +544,7 @@ void handleCollision(Kart& kart1, Kart& kart2) {
 
 		float rotationFactor = 5.0f;  // Factor de rotație
 
-		// **Rotirea kartului care a suferit coliziunea**
+		// Rotirea kartului care a suferit coliziunea
 		if (!kart1.isCurrentPlayer) {
 			float dotProduct1 = glm::dot(kart1.kartDirection, separation);
 			if (dotProduct1 > 0.0f) {
