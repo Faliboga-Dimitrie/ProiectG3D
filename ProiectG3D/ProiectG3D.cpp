@@ -530,7 +530,7 @@ void handleCollision(Kart& kart1, Kart& kart2) {
 	// Adăugarea distanțării pentru a evita suprapunerea completă
 	glm::vec3 separationVector = kart1.position - kart2.position;
 	float distance = glm::length(separationVector);
-	float maxCollisionDistance1 = 2.6 * maxCollisionDistance;
+	float maxCollisionDistance1 = 2.1 * maxCollisionDistance;
 	float minDistance = std::min(kart1.kartModel.boundingSphereRadius + kart2.kartModel.boundingSphereRadius, maxCollisionDistance1);
 
 	if (distance < minDistance) {
@@ -581,10 +581,6 @@ void handleCollision(Kart& kart1, Kart& kart2) {
 		}
 	}
 }
-
-
-
-
 
 void RenderTrack(Shader& shader, Model& model)
 {
