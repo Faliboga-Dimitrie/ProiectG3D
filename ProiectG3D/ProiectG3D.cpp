@@ -130,7 +130,7 @@ int main()
 	Model go_kartObjModel(go_kartObjFileName, false);
 	models["go_kart"] = go_kartObjModel;
 
-	std::string pilotObjFileName = (currentPath + "\\Models\\Pilot\\pilot.obj");
+	std::string pilotObjFileName = (currentPath + "\\Models\\Pilot\\pilot_good2.obj");
 	std::shared_ptr<Pilot> PilotModel = std::make_shared<Pilot>(pilotObjFileName, false);
 
 	LoadMultipleKarts(karts, models, PilotModel);

@@ -36,7 +36,7 @@ class Camera
 	CameraMode currentMode;
 
 protected:
-    const float cameraSpeedFactor = 9.5f;
+    const float cameraSpeedFactor = 29.5f;
     const float mouseSensitivity = 0.2f;
 
     // Perspective properties
