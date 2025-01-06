@@ -19,7 +19,7 @@
 //#include "CameraMovementType.h"
 
 // settings
-
+//c
 std::shared_ptr<Camera> pCamera = nullptr;
 std::shared_ptr<SkyBox> skybox = nullptr;
 
