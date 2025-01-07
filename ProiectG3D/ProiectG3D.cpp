@@ -19,7 +19,7 @@
 //#include "CameraMovementType.h"
 
 // settings
-//c
+
 std::shared_ptr<Camera> pCamera = nullptr;
 std::shared_ptr<SkyBox> skybox = nullptr;
 
@@ -40,11 +40,13 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow* window);
+void RenderShadowPass(Shader& depthShader,unsigned int depthMapFBO,unsigned int SHADOW_WIDTH, unsigned int SHADOW_HEIGHT,const glm::mat4& lightSpaceMatrix,std::unordered_map<std::string, Model>& models,std::array<Kart, 12>& karts);
 void RenderScene(ShaderManager& shaderManager, std::unordered_map<std::string,Model>& models, std::array<Kart, 12>& karts, std::shared_ptr<SkyBox> skyBoxInstance);
 void RenderSkybox(Shader& shader,std::shared_ptr<SkyBox> skyBoxInstance);
 void RenderTrack(Shader& shader, Model& model);
 void RenderKarts(Shader& shader, std::array<Kart, 12>& karts);
 void RenderTerrain(Shader& shader, Model& model);
+void RenderSun(Shader& lampShader, const glm::vec3& sunPos);
 void LoadMultipleKarts(std::array<Kart, 12>& karts, std::unordered_map<std::string, Model>& models, std::shared_ptr<Pilot> pilot);
 bool checkCollision(const Kart& kart1, const Kart& kart2);
 void handleCollision(Kart& kart1, Kart& kart2);
@@ -57,6 +59,7 @@ glm::vec3 kartPos(39.0f, 0.0f, 320.0f);  // Poziția inițială a kart-ului
 float kartSpeed = 15.0f;               // Viteza de mișcare a kart-ului
 
 glm::vec3 lightPos(0.0f, 2.0f, 1.0f); // Pozitia luminii
+glm::vec3 sunPos(20.0f, 25.0f, -10.0f);//Soarele
 
 float kartRotationAngle = 0.0f; // Unghiul curent al kart-ului
 float kartRotationSpeed = 90.0f; // Viteza de rotație în grade pe secundă
@@ -71,6 +74,10 @@ int currentKartIndex = 5; // Indexul următorului kart
 int lastKartIndex = -1; // Indexul kart-ului anterior
 
 std::array<Kart, 12> karts; // Vectorul de kart-uri
+
+unsigned int depthMapFBO = 0;
+unsigned int depthMap = 0;
+unsigned int cubeVAO = 0;
 
 int main()
 {
@@ -125,6 +132,8 @@ int main()
 	shaderManager.LoadShader("lampShader", currentPath + "\\Shaders\\Lamp.vs", currentPath + "\\Shaders\\Lamp.fs");
 	shaderManager.LoadShader("skyboxShader", currentPath + "\\Shaders\\SkyBox.vs", currentPath + "\\Shaders\\SkyBox.fs");
 	shaderManager.LoadShader("shadowMappingDepthShader", currentPath + "\\Shaders\\ShadowMappingDepth.vs", currentPath + "\\Shaders\\ShadowMappingDepth.fs");
+	shaderManager.LoadShader("sunShader",currentPath + "\\Shaders\\Sun.vs",currentPath + "\\Shaders\\Sun.fs");
+
 
 	std::string go_kartObjFileName = (currentPath + "\\Models\\Kart\\go_kart.obj");
 	Model go_kartObjModel(go_kartObjFileName, false);
@@ -143,32 +152,66 @@ int main()
 	Model TerrainModel(terrainObjFileName, false);
 	models["terrain"] = TerrainModel;
 
+	std::string sunObjFileName = (currentPath + "\\Models\\Sun\\sun.obj");
+	Model sunObjModel(sunObjFileName, false);
+	models["sun"] = sunObjModel;
+
 	const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
 
 	glfwSwapInterval(0);
 
 	float maxDeltaTime = 0.1f;
 
-	while (!glfwWindowShouldClose(window)) 
+	while (!glfwWindowShouldClose(window))
 	{
+		// 1) Actualizare timp și intrări
 		double currentFrame = glfwGetTime();
 		deltaTime = currentFrame - lastFrame;
-		deltaTime = deltaTime > maxDeltaTime ? maxDeltaTime : deltaTime;
+		deltaTime = (deltaTime > maxDeltaTime) ? maxDeltaTime : deltaTime;
 		lastFrame = currentFrame;
 
-		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		processInput(window); // Controlul utilizatorului
 
-		processInput(window);
-
+		// 2) Poziția dinamică a luminii
 		lightPos.x = 5.0 * cos(glfwGetTime());
 		lightPos.z = 5.0 * sin(glfwGetTime());
 
+		// 3) Calcul matrice lumină
+		glm::mat4 lightProjection = glm::ortho(-50.0f, 50.0f, -50.0f, 50.0f, 1.0f, 100.0f);
+		glm::mat4 lightView = glm::lookAt(sunPos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		glm::mat4 lightSpaceMatrix = lightProjection * lightView;
+
+		// 4) Pasul de umbrire (Shadow Pass)
+		glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+		glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+		glClear(GL_DEPTH_BUFFER_BIT);
+
+		Shader& depthShader = shaderManager.GetShader("shadowMappingDepthShader");
+		depthShader.use();
+		depthShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
+
+		RenderShadowPass(depthShader, depthMapFBO, SHADOW_WIDTH, SHADOW_HEIGHT, lightSpaceMatrix, models, karts);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0); // Dezactivare FBO pentru randare normală
+
+		// 5) Pasul final (randare normală)
+		glViewport(0, 0, mode->width, mode->height);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		Shader& finalShader = shaderManager.GetShader("lightingWithTextureShader");
+		finalShader.use();
+		finalShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
+
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, depthMap);
+		finalShader.setInt("shadowMap", 1);
+
 		RenderScene(shaderManager, models, karts, skybox);
 
+		// 6) Actualizare buffer și evenimente
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
+
 
 	glfwTerminate();
 	return 0;
@@ -333,6 +376,8 @@ void RenderScene(ShaderManager& shaderManager, std::unordered_map<std::string, M
 	RenderKarts(shaderManager.GetShader("lightingWithTextureShader"),karts);
 	RenderTrack(shaderManager.GetShader("lightingWithTextureShader"), models.at("track"));
 	RenderTerrain(shaderManager.GetShader("lightingWithTextureShader"), models.at("terrain"));
+	RenderSun(shaderManager.GetShader("sunShader"), models.at("sun"), sunPos);
+
 }
 
 void RenderSkybox(Shader& shader, std::shared_ptr<SkyBox> skyBoxInstance)
@@ -622,4 +667,135 @@ void RenderTrack(Shader& shader, Model& model)
 	model.Draw(shader);
 }
 
+void RenderSunDepth(Shader& depthShader)
+{
+	// Poziția soarelui (ce vrei tu)
+	glm::vec3 sunPosition(15.0f, 25.0f, -15.0f);
 
+	// Matrice model
+	glm::mat4 model(1.0f);
+	model = glm::translate(model, sunPosition);
+	model = glm::scale(model, glm::vec3(2.0f)); // mărimea soarelui
+
+	// Trimitem către shader
+	depthShader.setMat4("model", model);
+
+	// Desenăm sfera/cubul soarelui (vezi pasul 3 pentru mesh)
+	glBindVertexArray(cubeVAO); // sau sphereVAO
+	glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+	glBindVertexArray(0);
+}
+
+void RenderSun(Shader& shader, Model& sunModel, const glm::vec3& sunPos)
+{
+	// Make sure we use the shader!
+	shader.use();
+
+	// Projection & view:
+	shader.setMat4("projection", pCamera->GetProjectionMatrix());
+	shader.setMat4("view", pCamera->GetViewMatrix());
+
+	// Basic uniform setup:
+	shader.SetVec3("objectColor", 1.0f, 1.0f, 0.0f); // bright yellow
+	shader.SetVec3("lightColor", 1.0f, 1.0f, 1.0f);
+	shader.SetVec3("lightPos", lightPos);
+	shader.SetVec3("viewPos", pCamera->GetPosition());
+
+	// If you have a diffuse texture, set it to 0:
+	shader.setInt("texture_diffuse1", 0);
+
+	// Model matrix for the sun
+	glm::mat4 modelSun(1.0f);
+	// Place it where you want, e.g. at sunPos:
+	modelSun = glm::translate(modelSun, sunPos);
+	// Scale it to something visible
+	modelSun = glm::scale(modelSun, glm::vec3(5.0f));
+	// or bigger if you want...
+	shader.setMat4("model", modelSun);
+
+	// Finally draw the sun
+	sunModel.Draw(shader);
+}
+
+void RenderShadowPass(Shader& depthShader,
+	unsigned int depthMapFBO,
+	unsigned int SHADOW_WIDTH,
+	unsigned int SHADOW_HEIGHT,
+	const glm::mat4& lightSpaceMatrix,
+	std::unordered_map<std::string, Model>& models,
+	std::array<Kart, 12>& karts)
+{
+	// 1) Bind the depth FBO and set viewport to shadow-map size
+	glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+	glClear(GL_DEPTH_BUFFER_BIT);
+
+	// 2) Use the depth shader
+	depthShader.use();
+	// Send the lightSpaceMatrix uniform
+	depthShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
+
+	// --------------------------------------------------
+	// Render your scene from the LIGHT’s POV:
+	// --------------------------------------------------
+
+	// (a) Render the track
+	{
+		// Model matrix for the track
+		glm::mat4 trackModel = glm::mat4(1.0f);
+		trackModel = glm::scale(trackModel, glm::vec3(200.0f));
+		trackModel = glm::translate(trackModel, glm::vec3(0.0f, -0.008f, 0.0f));
+
+		depthShader.setMat4("model", trackModel);
+		models.at("track").Draw(depthShader);
+	}
+
+	// (b) Render the terrain
+	{
+		glm::mat4 terrainModel = glm::mat4(1.0f);
+		terrainModel = glm::scale(terrainModel, glm::vec3(0.1f));
+		terrainModel = glm::translate(terrainModel, glm::vec3(0.0f, -3800.0f, 0.0f));
+
+		depthShader.setMat4("model", terrainModel);
+		models.at("terrain").Draw(depthShader);
+	}
+
+	// (c) Render the sun itself (if you want it to cast shadow)
+	// Usually we don't cast shadows from the sun sphere, but up to you:
+	{
+		glm::mat4 sunModelMat = glm::mat4(1.0f);
+		// Put the sun at (sunPos) and scale it up if needed
+		// For example:
+		// sunModelMat = glm::translate(sunModelMat, sunPos);
+		// sunModelMat = glm::scale(sunModelMat, glm::vec3(5.0f));
+		//
+		// But often we skip the sun geometry in the depth pass.
+	}
+
+	// (d) Render the karts
+	for (size_t i = 0; i < karts.size(); ++i)
+	{
+		const auto& kart = karts[i];
+
+		// Build the same model matrix you use in your main pass
+		glm::mat4 kartModel = glm::mat4(1.0f);
+		kartModel = glm::translate(kartModel, kart.position);
+		kartModel = glm::rotate(kartModel, glm::radians(kart.rotationAngle),
+			glm::vec3(0.0f, 1.0f, 0.0f));
+		kartModel = glm::scale(kartModel, glm::vec3(0.06f));
+
+		depthShader.setMat4("model", kartModel);
+		kart.kartModel.Draw(depthShader);
+
+		// If you want the pilot to cast a shadow:
+		glm::mat4 pilotModelMat = glm::mat4(1.0f);
+		pilotModelMat = glm::translate(pilotModelMat, glm::vec3(0.0f, 1.2f, 0.0f));
+		pilotModelMat = kartModel * pilotModelMat;
+		pilotModelMat = glm::scale(pilotModelMat, glm::vec3(0.02f));
+		depthShader.setMat4("model", pilotModelMat);
+		kart.pilotModel->Draw(depthShader);
+	}
+
+	// 3) Unbind so we can go back to our normal pass
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
