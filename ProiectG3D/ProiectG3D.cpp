@@ -38,8 +38,8 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow* window);
-void RenderScene(ShaderManager& shaderManager, std::unordered_map<std::string,Model> models, std::vector<Kart>& karts, SkyBox* skyBoxInstance);
-void RenderSkybox(Shader& shader,SkyBox* skyBoxInstance);
+void RenderScene(ShaderManager& shaderManager, std::unordered_map<std::string, Model> models, std::vector<Kart>& karts, SkyBox* skyBoxInstance);
+void RenderSkybox(Shader& shader, SkyBox* skyBoxInstance);
 void RenderTrack(Shader& shader, Model& model);
 void RenderKarts(Shader& shader, std::vector<Kart>& karts);
 void RenderTerrain(Shader& shader, Model& model);
@@ -49,6 +49,9 @@ void UpdateKarts(std::vector<Kart>& karts, glm::vec3 kartPos);
 // timing
 double deltaTime = 0.0f;	// time between current frame and last frame
 double lastFrame = 0.0f;
+
+float maxDeltaTime = 0.1f;
+float minDeltaTime = 0.01f;
 
 glm::vec3 kartPos(39.0f, 0.0f, 320.0f);  // Poziția inițială a kart-ului
 float kartSpeed = 15.0f;               // Viteza de mișcare a kart-ului
@@ -62,6 +65,8 @@ float kartAcceleration = 0.0f; // Accelerarea curentă
 float kartMaxSpeed = 50.0f; // Viteza maximă
 float kartAccelerationRate = 20.0f; // Rata de accelerare
 float kartDecelerationRate = 5.0f; // Rata de decelerare
+
+float kartSteeringAngle = 0.0f;
 
 int currentKartIndex = 5; // Indexul următorului kart
 int lastKartIndex = 0; // Indexul kart-ului anterior
@@ -89,6 +94,9 @@ int main()
 	}
 
 	glfwMakeContextCurrent(window);
+
+	glfwSwapInterval(1);
+
 	glViewport(0, 0, mode->width, mode->height);
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 	glfwSetCursorPosCallback(window, mouse_callback);
@@ -126,7 +134,7 @@ int main()
 	Model go_kartObjModel(go_kartObjFileName, false);
 	models["go_kart"] = go_kartObjModel;
 
-	std::string pilotObjFileName = (currentPath + "\\Models\\Pilot\\pilot.obj");
+	std::string pilotObjFileName = (currentPath + "\\Models\\Pilot\\pilot_good2.obj");
 	Pilot PilotModel(pilotObjFileName, false);
 
 	LoadMultipleKarts(karts, models, PilotModel);
@@ -145,7 +153,7 @@ int main()
 
 	float maxDeltaTime = 0.1f;
 
-	while (!glfwWindowShouldClose(window)) 
+	while (!glfwWindowShouldClose(window))
 	{
 		double currentFrame = glfwGetTime();
 		deltaTime = currentFrame - lastFrame;
@@ -191,7 +199,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yOffset)
 	pCamera->ProcessMouseScroll((float)yOffset);
 }
 
-void processInput(GLFWwindow* window) 
+void processInput(GLFWwindow* window)
 {
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
@@ -211,6 +219,9 @@ void processInput(GLFWwindow* window)
 
 	glm::vec3 kartDirection(sin(glm::radians(karts[currentKartIndex].rotationAngle)), 0.0f, cos(glm::radians(karts[currentKartIndex].rotationAngle)));
 
+
+
+
 	// Mișcare înainte
 	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
 		karts[currentKartIndex].kartAcceleration += kartAccelerationRate * (float)deltaTime;
@@ -228,16 +239,25 @@ void processInput(GLFWwindow* window)
 	karts[currentKartIndex].position += kartDirection * karts[currentKartIndex].kartAcceleration * (float)deltaTime;
 
 
+
 	// Rotație la stânga
 	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
 		float rotationFactor = (karts[currentKartIndex].kartAcceleration >= 0.0f) ? 1.0f : -1.0f; // Schimbă sensul rotației
 		karts[currentKartIndex].rotationAngle += kartRotationSpeed * rotationFactor * (float)deltaTime;
+		kartSteeringAngle += rotationFactor;
+		if (kartSteeringAngle > 10.0f) {
+			kartSteeringAngle = 10.0f;
+		}
 	}
 
 	// Rotație la dreapta
 	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
 		float rotationFactor = (karts[currentKartIndex].kartAcceleration >= 0.0f) ? 1.0f : -1.0f; // Schimbă sensul rotației
 		karts[currentKartIndex].rotationAngle -= kartRotationSpeed * rotationFactor * (float)deltaTime;
+		kartSteeringAngle -= rotationFactor;
+		if (kartSteeringAngle < -10.0f) {
+			kartSteeringAngle = -10.0f;
+		}
 	}
 
 	// Decelerare naturală
@@ -252,25 +272,20 @@ void processInput(GLFWwindow* window)
 			karts[currentKartIndex].kartAcceleration = 0.0f;
 	}
 
-	//if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-	//	kartPos.z += kartSpeed * (float)deltaTime;  // Mișcare înainte
+	if (kartSteeringAngle > 0.0f) {
+		kartSteeringAngle -= 10.0f * (float)deltaTime;
+		if (kartSteeringAngle < 0.0f) {
+			kartSteeringAngle = 0.0f;
+		}
+	}
+	else if (kartSteeringAngle < 0.0f) {
+		kartSteeringAngle += 10.0f * (float)deltaTime;
+		if (kartSteeringAngle > 0.0f) {
+			kartSteeringAngle = 0.0f;
+		}
+	}
 
-	//if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-	//	kartPos.z -= kartSpeed * (float)deltaTime;  // Mișcare înapoi
 
-	//if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
-	//	kartRotationAngle += kartRotationSpeed * (float)deltaTime; // Rotește la stânga
-
-	//if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-	//	kartRotationAngle -= kartRotationSpeed * (float)deltaTime; // Rotește la dreapta
-
-	/*
-	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
-		kartPos.x += kartSpeed * (float)deltaTime;  // Mișcare la stânga
-
-	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-		kartPos.x -= kartSpeed * (float)deltaTime;  // Mișcare la dreapta
-	*/
 	if (glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS)
 		pCamera->SetCameraMode(CameraMode::FREE);  // Mișcare libera a camerei
 
@@ -313,8 +328,8 @@ void processInput(GLFWwindow* window)
 
 void RenderScene(ShaderManager& shaderManager, std::unordered_map<std::string, Model> models, std::vector<Kart>& karts, SkyBox* skyBoxInstance)
 {
-	RenderSkybox(shaderManager.GetShader("skyboxShader"),skyBoxInstance);
-	RenderKarts(shaderManager.GetShader("lightingWithTextureShader"),karts);
+	RenderSkybox(shaderManager.GetShader("skyboxShader"), skyBoxInstance);
+	RenderKarts(shaderManager.GetShader("lightingWithTextureShader"), karts);
 	RenderTrack(shaderManager.GetShader("lightingWithTextureShader"), models.at("track"));
 	RenderTerrain(shaderManager.GetShader("lightingWithTextureShader"), models.at("terrain"));
 }
@@ -327,6 +342,54 @@ void RenderSkybox(Shader& shader, SkyBox* skyBoxInstance)
 	skyBoxInstance->Render();
 }
 
+//void RenderKarts(Shader& shader, std::vector<Kart>& karts)
+//{
+//	shader.use();
+//	shader.SetVec3("lightColor", 1.0f, 1.0f, 1.0f);
+//	shader.SetVec3("lightPos", lightPos);
+//	shader.SetVec3("viewPos", pCamera->GetPosition());
+//	shader.setInt("texture_diffuse1", 0);
+//
+//	shader.setMat4("projection", pCamera->GetProjectionMatrix());
+//	shader.setMat4("view", pCamera->GetViewMatrix());
+//
+//	// Setează kart-ul curent
+//	karts[currentKartIndex].isCurrentPlayer = true;
+//
+//	// Resetează kart-urile anterioare
+//	if (currentKartIndex != lastKartIndex)
+//		karts[lastKartIndex].isCurrentPlayer = false;
+//
+//	// Itierează prin toate karturile și pilotele
+//	for (Kart& kart : karts) {
+//		glm::mat4 go_kartModel = glm::mat4(1.0f);
+//		go_kartModel = glm::translate(go_kartModel, kart.position);       // Aplică poziția kart-ului
+//		go_kartModel = glm::rotate(go_kartModel, glm::radians(kart.rotationAngle), glm::vec3(0.0f, 1.0f, 0.0f)); // Aplică rotația
+//		go_kartModel = glm::scale(go_kartModel, glm::vec3(0.06f));  // Aplică scala kart-ului
+//		if (kart.isCurrentPlayer) {
+//			glm::vec3 kartForwardVector = glm::normalize(glm::vec3(go_kartModel[2]));  // Obține vectorul de direcție al kart-ului
+//			pCamera->UpdateKartPosition(kart.position, kartForwardVector); // Actualizează poziția camerei
+//		}
+//
+//		shader.use();
+//		shader.setMat4("model", go_kartModel);
+//		kart.kartModel.Draw(shader);
+//
+//		if (kart.isCurrentPlayer)
+//		{
+//			kart.pilotModel.UpdatePosition(kart.position, kart.rotationAngle);
+//			glm::mat4 pilotModel = glm::mat4(1.0f);
+//			pilotModel = glm::translate(pilotModel, glm::vec3(0.0f, 1.2f, 0.0f)); // Poziționează pilotul în kart
+//			pilotModel = go_kartModel * pilotModel; // Aplică rotația kart-ului la pilot
+//			pilotModel = glm::scale(pilotModel, glm::vec3(0.02f)); // Ajustează scala pilotului
+//			shader.setMat4("model", pilotModel);
+//			kart.pilotModel.Draw(shader);
+//		}
+//	}
+//}
+
+
+// Adăugarea rotației roților karturilor
 void RenderKarts(Shader& shader, std::vector<Kart>& karts)
 {
 	shader.use();
@@ -345,28 +408,30 @@ void RenderKarts(Shader& shader, std::vector<Kart>& karts)
 	if (currentKartIndex != lastKartIndex)
 		karts[lastKartIndex].isCurrentPlayer = false;
 
-	// Itierează prin toate karturile și pilotele
 	for (Kart& kart : karts) {
 		glm::mat4 go_kartModel = glm::mat4(1.0f);
-		go_kartModel = glm::translate(go_kartModel, kart.position);       // Aplică poziția kart-ului
-		go_kartModel = glm::rotate(go_kartModel, glm::radians(kart.rotationAngle), glm::vec3(0.0f, 1.0f, 0.0f)); // Aplică rotația
-		go_kartModel = glm::scale(go_kartModel, glm::vec3(0.06f));  // Aplică scala kart-ului
-		if (kart.isCurrentPlayer) {
-			glm::vec3 kartForwardVector = glm::normalize(glm::vec3(go_kartModel[2]));  // Obține vectorul de direcție al kart-ului
-			pCamera->UpdateKartPosition(kart.position, kartForwardVector); // Actualizează poziția camerei
-		}
+		go_kartModel = glm::translate(go_kartModel, kart.position);
+		go_kartModel = glm::rotate(go_kartModel, glm::radians(kart.rotationAngle), glm::vec3(0.0f, 1.0f, 0.0f));
+		go_kartModel = glm::scale(go_kartModel, glm::vec3(0.06f));
 
+		if (kart.isCurrentPlayer) {
+			glm::vec3 kartForwardVector = glm::normalize(glm::vec3(go_kartModel[2]));
+			pCamera->UpdateKartPosition(kart.position, kartForwardVector);
+		}
 		shader.use();
+
+		glm::mat4 frontWheelSteer = glm::rotate(go_kartModel, glm::radians(kartSteeringAngle), glm::vec3(0.0f, 1.0f, 0.0f));
+		kart.kartModel.setNodeTransforms("obj5", frontWheelSteer);
+
 		shader.setMat4("model", go_kartModel);
 		kart.kartModel.Draw(shader);
 
-		if (kart.isCurrentPlayer)
-		{
+		if (kart.isCurrentPlayer) {
 			kart.pilotModel.UpdatePosition(kart.position, kart.rotationAngle);
 			glm::mat4 pilotModel = glm::mat4(1.0f);
-			pilotModel = glm::translate(pilotModel, glm::vec3(0.0f, 1.2f, 0.0f)); // Poziționează pilotul în kart
-			pilotModel = go_kartModel * pilotModel; // Aplică rotația kart-ului la pilot
-			pilotModel = glm::scale(pilotModel, glm::vec3(0.02f)); // Ajustează scala pilotului
+			pilotModel = glm::translate(pilotModel, glm::vec3(0.0f, 1.2f, 0.0f));
+			pilotModel = go_kartModel * pilotModel;
+			pilotModel = glm::scale(pilotModel, glm::vec3(0.02f));
 			shader.setMat4("model", pilotModel);
 			kart.pilotModel.Draw(shader);
 		}
