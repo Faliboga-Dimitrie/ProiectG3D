@@ -71,8 +71,8 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>..\..\External\stb;..\..\ProiectG3D\packages\Assimp.3.0.0\build\native\include;..\..\External\glm;..\..\External\glfw-3.4.bin.WIN64\include\GLFW;..\..\External\glew-2.1.0\include;$(IncludePath)</IncludePath>
-    <LibraryPath>..\..\External\glfw-3.4.bin.WIN64\lib-vc2022;..\..\External\glew-2.1.0\lib\Release\x64;$(LibraryPath)</LibraryPath>
+    <IncludePath>..\..\External\SFML-2.5.1\include;..\..\External\stb;..\..\ProiectG3D\packages\Assimp.3.0.0\build\native\include;..\..\External\glm;..\..\External\glfw-3.4.bin.WIN64\include\GLFW;..\..\External\glew-2.1.0\include;$(IncludePath)</IncludePath>
+    <LibraryPath>..\..\External\SFML-2.5.1\lib;..\..\External\glfw-3.4.bin.WIN64\lib-vc2022;..\..\External\glew-2.1.0\lib\Release\x64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -113,6 +113,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>sfml-audio-d.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

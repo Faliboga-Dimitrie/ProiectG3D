@@ -9,6 +9,10 @@
 #include <algorithm>
 #include <random>
 #include <ctime>
+#include <map>
+
+
+#include <SFML/Audio.hpp>
 
 #include "ShaderManager.h"
 #include "Model.h"
@@ -53,6 +57,9 @@ void LoadMultipleKarts(std::array<Kart, 12>& karts, std::unordered_map<std::stri
 bool checkCollision(const Kart& kart1, const Kart& kart2);
 void handleCollision(Kart& kart1, Kart& kart2);
 float random_floatant_number();
+void loadSounds();
+void playSound(const std::string& soundName);
+void stopSound(const std::string& soundName);
 
 // timing
 double deltaTime = 0.0f;	// time between current frame and last frame
@@ -77,6 +84,11 @@ int lastKartIndex = -1; // Indexul kart-ului anterior
 int hitKartIndex = 1; // Indexul kart-ului lovit
 
 std::array<Kart, 12> karts; // Vectorul de kart-uri
+
+std::map<std::string, sf::SoundBuffer> soundBuffers;
+std::map<std::string, sf::Sound> sounds;
+
+std::string currentPath;
 
 int main()
 {
@@ -122,7 +134,7 @@ int main()
 	std::wstring wscurrentPath = executablePath.substr(0, executablePath.find_last_of(L"\\/"));
 
 	std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-	std::string currentPath = converter.to_bytes(wscurrentPath);
+	currentPath = converter.to_bytes(wscurrentPath);
 
 	skybox = std::make_shared<SkyBox>(currentPath + "\\Textures\\SkyBox\\", "back.jpg", "front.jpg", "top.jpg", "bottom.jpg", "left.jpg", "right.jpg");
 
@@ -140,6 +152,7 @@ int main()
 	std::shared_ptr<Pilot> PilotModel = std::make_shared<Pilot>(pilotObjFileName, false);
 
 	LoadMultipleKarts(karts, models, PilotModel);
+	loadSounds();
 
 	std::string TrackObjFileName = (currentPath + "\\Models\\Track\\track.obj");
 	Model TrackModel(TrackObjFileName, false);
@@ -213,6 +226,10 @@ void processInput(GLFWwindow* window)
 	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
 		pCamera->ProcessKeyboard(CameraMovementType::DOWN, (float)deltaTime);
 
+	if (sounds["kart_acceleration"].getStatus() != sf::Sound::Playing)
+		if (sounds["kart_running_engine"].getStatus() != sf::Sound::Playing)
+			playSound("kart_running_engine");
+
 	//Parcurgem toate kart-urile pentru a aplica decelerarea
 	for (size_t i = 0; i < karts.size(); ++i) {
 		auto& kart = karts[i]; 
@@ -251,6 +268,10 @@ void processInput(GLFWwindow* window)
 	for (size_t i = 0; i < karts.size(); ++i) {
 		for (size_t j = i + 1; j < karts.size(); ++j) { // Iterăm doar peste perechile de karturi neverificate
 			if (checkCollision(karts[i], karts[j])) {
+
+				if (sounds["kart_crash"].getStatus() != sf::Sound::Playing)
+					playSound("kart_crash");
+
 				handleCollision(karts[i], karts[j]);
 				if (karts[i].kartDirection.z - karts[j].kartDirection.z < 0 || karts[i].kartDirection.x - karts[j].kartDirection.x < 0)
 				{
@@ -262,7 +283,7 @@ void processInput(GLFWwindow* window)
 					karts[i].position -= karts[i].kartDirection * karts[i].kartAcceleration * static_cast<float>(deltaTime);
 					karts[j].position += karts[j].kartDirection * karts[j].kartAcceleration * static_cast<float>(deltaTime);
 				}
-					
+				
 			}
 		}
 	}
@@ -278,6 +299,12 @@ void processInput(GLFWwindow* window)
 	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
 		karts[currentKartIndex].kartAcceleration += kartAccelerationRate * static_cast<float>(deltaTime);
 		karts[currentKartIndex].kartAcceleration = std::min(karts[currentKartIndex].kartAcceleration, kartMaxSpeed);
+
+		if (sounds["kart_running_engine"].getStatus() == sf::Sound::Playing)
+			stopSound("kart_running_engine");
+
+		if (sounds["kart_acceleration"].getStatus() != sf::Sound::Playing)
+			playSound("kart_acceleration");
 	}
 
 	// Mișcare înapoi
@@ -636,6 +663,53 @@ float random_floatant_number()
 	return dis(gen);
 }
 
+void loadSounds() {
+	// Listează fișierele de sunet împreună cu numele asociate
+	std::map<std::string, std::string> soundFiles = {
+		{"kart_acceleration",currentPath + "\\assets\\kart_acceleration.wav"},
+		{"kart_running_engine",currentPath + "\\assets\\kart_running_engine.wav"},
+		{"kart_crash",currentPath + "\\assets\\kart_crash.wav"}
+	};
+
+	// Încarcă fiecare fișier de sunet în hărți
+	for (const auto& it : soundFiles) {
+		sf::SoundBuffer buffer;
+		if (!buffer.loadFromFile(it.second)) {
+			std::cerr << "Nu s-a putut incarca " << it.second<< "!" << std::endl;
+			continue; // Treci la următorul fișier
+		}
+
+		// Adaugă buffer-ul în map
+		soundBuffers[it.first] = buffer;
+
+		// Creează sunetul și setează buffer-ul
+		sf::Sound sound;
+		sound.setBuffer(soundBuffers[it.first]);
+
+		// Adaugă sunetul în map
+		sounds[it.first] = sound;
+	}
+}
+
+void playSound(const std::string& soundName) {
+	// Verifică dacă sunetul există în map și îl redă
+	if (sounds.find(soundName) != sounds.end()) {
+		sounds[soundName].play();
+	}
+	else {
+		std::cerr << "Sunetul \"" << soundName << "\" nu exista!" << std::endl;
+	}
+}
+
+void stopSound(const std::string& soundName) {
+	// Oprește sunetul dacă există
+	if (sounds.find(soundName) != sounds.end()) {
+		sounds[soundName].stop();
+	}
+	else {
+		std::cerr << "Sunetul \"" << soundName << "\" nu exista!" << std::endl;
+	}
+}
 void RenderTrack(Shader& shader, Model& model)
 {
 	// Verificăm dacă matricele de proiecție și vizualizare s-au schimbat
