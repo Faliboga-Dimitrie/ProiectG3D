@@ -46,7 +46,7 @@ void RenderSkybox(Shader& shader,std::shared_ptr<SkyBox> skyBoxInstance);
 void RenderTrack(Shader& shader, Model& model);
 void RenderKarts(Shader& shader, std::array<Kart, 12>& karts);
 void RenderTerrain(Shader& shader, Model& model);
-void RenderSun(Shader& lampShader, const glm::vec3& sunPos);
+void RenderSun(Shader& shader, Model& sunModel, const glm::vec3& sunPos);
 void LoadMultipleKarts(std::array<Kart, 12>& karts, std::unordered_map<std::string, Model>& models, std::shared_ptr<Pilot> pilot);
 bool checkCollision(const Kart& kart1, const Kart& kart2);
 void handleCollision(Kart& kart1, Kart& kart2);
@@ -775,7 +775,7 @@ void RenderShadowPass(Shader& depthShader,
 	// (d) Render the karts
 	for (size_t i = 0; i < karts.size(); ++i)
 	{
-		const auto& kart = karts[i];
+		auto& kart = karts[i];
 
 		// Build the same model matrix you use in your main pass
 		glm::mat4 kartModel = glm::mat4(1.0f);
