@@ -132,7 +132,7 @@ int main()
 	shaderManager.LoadShader("lampShader", currentPath + "\\Shaders\\Lamp.vs", currentPath + "\\Shaders\\Lamp.fs");
 	shaderManager.LoadShader("skyboxShader", currentPath + "\\Shaders\\SkyBox.vs", currentPath + "\\Shaders\\SkyBox.fs");
 	shaderManager.LoadShader("shadowMappingDepthShader", currentPath + "\\Shaders\\ShadowMappingDepth.vs", currentPath + "\\Shaders\\ShadowMappingDepth.fs");
-	shaderManager.LoadShader("sunShader",currentPath + "\\Shaders\\Sun.vs",currentPath + "\\Shaders\\Sun.fs");
+	shaderManager.LoadShader("sunShader",currentPath + "\\Shaders\\PhongLight.vs",currentPath + "\\Shaders\\PhongLight.fs");
 
 
 	std::string go_kartObjFileName = (currentPath + "\\Models\\Kart\\go_kart.obj");
@@ -709,7 +709,7 @@ void RenderSun(Shader& shader, Model& sunModel, const glm::vec3& sunPos)
 	// Place it where you want, e.g. at sunPos:
 	modelSun = glm::translate(modelSun, sunPos);
 	// Scale it to something visible
-	modelSun = glm::scale(modelSun, glm::vec3(5.0f));
+	modelSun = glm::scale(modelSun, glm::vec3(0.02f));
 	// or bigger if you want...
 	shader.setMat4("model", modelSun);
 
