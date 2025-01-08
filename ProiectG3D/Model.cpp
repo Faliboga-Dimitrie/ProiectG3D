@@ -8,6 +8,8 @@
 Model::Model(string const& path, bool bSmoothNormals, bool gamma) : gammaCorrection(gamma)
 {
     loadModel(path, bSmoothNormals);
+	boundingSphereCenter = calculateBoundingSphereCenter();
+	boundingSphereRadius = calculateBoundingSphereRadius();
 }
 
 void Model::Draw(Shader& shader)
@@ -33,6 +35,33 @@ void Model::setNodeTransforms(const std::string& nodeName, glm::mat4 transform)
 void Model::setIsAnimated(bool animated)
 {
     isAnimated = animated;
+}
+
+glm::vec3 Model::calculateBoundingSphereCenter() const {
+    glm::vec3 overallCenter(0.0f);
+    size_t totalVertexCount = 0;
+
+    for (const Mesh& mesh : meshes) {
+        glm::vec3 meshCenter = findMeshCenter(mesh);
+        overallCenter += meshCenter * static_cast<float>(mesh.numVertices);
+        totalVertexCount += mesh.numVertices;
+    }
+
+    return overallCenter / static_cast<float>(totalVertexCount);
+}
+
+float Model::calculateBoundingSphereRadius() const{
+    glm::vec3 center = calculateBoundingSphereCenter();
+    float maxRadius = 0.0f;
+
+    for (const Mesh& mesh : meshes) {
+        float radius = findMeshRadius(mesh, center);
+        if (radius > maxRadius) {
+            maxRadius = radius;
+        }
+    }
+
+    return maxRadius;
 }
 
 void Model::loadModel(string const& path, bool bSmoothNormals)
@@ -171,6 +200,27 @@ vector<Texture> Model::loadMaterialTextures(aiMaterial* mat, aiTextureType type,
         }
     }
     return textures;
+}
+
+glm::vec3 Model::findMeshCenter(const Mesh& mesh) const
+{
+    glm::vec3 center(0.0f);
+    for (unsigned int i = 0; i < mesh.numVertices; ++i) {
+        center += mesh.vertices.get()[i].Position;
+    }
+    return center / static_cast<float>(mesh.numVertices);
+}
+
+float Model::findMeshRadius(const Mesh& mesh, glm::vec3 center) const
+{
+    float maxRadius = 0.0f;
+    for (unsigned int i = 0; i < mesh.numVertices; ++i) {
+        float distance = glm::distance(mesh.vertices.get()[i].Position, center);
+        if (distance > maxRadius) {
+            maxRadius = distance;
+        }
+    }
+    return maxRadius;
 }
 
 unsigned int TextureFromFile(const char* path, const string& directory, bool gamma)

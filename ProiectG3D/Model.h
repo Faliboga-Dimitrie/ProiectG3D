@@ -23,6 +23,9 @@ public:
     bool isAnimated = false;
 
 
+    glm::vec3 boundingSphereCenter;
+    float boundingSphereRadius;
+
 	Model() = default;
 
     Model(string const& path, bool bSmoothNormals, bool gamma = false);
@@ -32,6 +35,10 @@ public:
     void setNodeTransforms(const std::string& nodeName, glm::mat4 transform);
     void setIsAnimated(bool animated);
 
+    glm::vec3 calculateBoundingSphereCenter() const;
+
+    float calculateBoundingSphereRadius() const;
+
 private:
     void loadModel(string const& path, bool bSmoothNormals);
 
@@ -40,6 +47,10 @@ private:
     Mesh processMesh(std::string nodeName, aiMesh* mesh, const aiScene* scene);
 
     vector<Texture> loadMaterialTextures(aiMaterial* mat, aiTextureType type, string typeName);
+
+    glm::vec3 findMeshCenter(const Mesh& mesh) const;
+
+    float findMeshRadius(const Mesh& mesh, glm::vec3 center) const;
 
 };
 
