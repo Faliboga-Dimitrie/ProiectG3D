@@ -723,6 +723,10 @@ void loadSounds() {
 		// Adaugă sunetul în map
 		sounds[it.first] = sound;
 	}
+
+	sounds["kart_crash"].setVolume(50.0f);
+	sounds["kart_running_engine"].setVolume(190.0f);
+	sounds["kart_acceleration"].setVolume(50.0f);
 }
 
 void playSound(const std::string& soundName) {
