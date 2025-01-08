@@ -36,6 +36,7 @@ struct Kart {
 	bool kartAccelerationChanged = false;
 	int index;
 	float mass;
+	float kartSteeringAngle = 0.0f;
 
 	Kart() = default;
 };
@@ -75,7 +76,7 @@ float kartAccelerationRate = 20.0f; // Rata de accelerare
 float kartDecelerationRate = 5.0f; // Rata de decelerare
 float maxCollisionDistance = 4.2f; // Distanța maximă de coliziune
 
-float kartSteeringAngle = 0.0f;
+
 
 int currentKartIndex = 5; // Indexul următorului kart
 int lastKartIndex = -1; // Indexul kart-ului anterior
@@ -303,9 +304,9 @@ void processInput(GLFWwindow* window)
 	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
 		float rotationFactor = (karts[currentKartIndex].kartAcceleration >= 0.0f) ? 1.0f : -1.0f; // Schimbă sensul rotației
 		karts[currentKartIndex].rotationAngle += kartRotationSpeed * rotationFactor * static_cast<float>(deltaTime);
-		kartSteeringAngle += rotationFactor;
-		if (kartSteeringAngle > 10.0f) {
-			kartSteeringAngle = 10.0f;
+		karts[currentKartIndex].kartSteeringAngle += rotationFactor;
+		if (karts[currentKartIndex].kartSteeringAngle > 10.0f) {
+			karts[currentKartIndex].kartSteeringAngle = 10.0f;
 		}
 	}
 
@@ -313,9 +314,9 @@ void processInput(GLFWwindow* window)
 	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
 		float rotationFactor = (karts[currentKartIndex].kartAcceleration >= 0.0f) ? 1.0f : -1.0f; // Schimbă sensul rotației
 		karts[currentKartIndex].rotationAngle -= kartRotationSpeed * rotationFactor * static_cast<float>(deltaTime);
-		kartSteeringAngle -= rotationFactor;
-		if (kartSteeringAngle < -10.0f) {
-			kartSteeringAngle = -10.0f;
+		karts[currentKartIndex].kartSteeringAngle -= rotationFactor;
+		if (karts[currentKartIndex].kartSteeringAngle < -10.0f) {
+			karts[currentKartIndex].kartSteeringAngle = -10.0f;
 		}
 	}
 	
@@ -365,16 +366,16 @@ void processInput(GLFWwindow* window)
 		pCamera->Reset(width, height);
 	}
 
-	if (kartSteeringAngle > 0.0f) {
-		kartSteeringAngle -= 10.0f * (float)deltaTime;
-		if (kartSteeringAngle < 0.0f) {
-			kartSteeringAngle = 0.0f;
+	if (karts[currentKartIndex].kartSteeringAngle > 0.0f) {
+		karts[currentKartIndex].kartSteeringAngle -= 10.0f * (float)deltaTime;
+		if (karts[currentKartIndex].kartSteeringAngle < 0.0f) {
+			karts[currentKartIndex].kartSteeringAngle = 0.0f;
 		}
 	}
-	else if (kartSteeringAngle < 0.0f) {
-		kartSteeringAngle += 10.0f * (float)deltaTime;
-		if (kartSteeringAngle > 0.0f) {
-			kartSteeringAngle = 0.0f;
+	else if (karts[currentKartIndex].kartSteeringAngle < 0.0f) {
+		karts[currentKartIndex].kartSteeringAngle += 10.0f * (float)deltaTime;
+		if (karts[currentKartIndex].kartSteeringAngle > 0.0f) {
+			karts[currentKartIndex].kartSteeringAngle = 0.0f;
 		}
 	}
 }
@@ -445,7 +446,7 @@ void RenderKarts(Shader& shader, std::array<Kart, 12>& karts)
 		}
 		shader.use();
 
-		glm::mat4 frontWheelSteer = glm::rotate(kartModel, glm::radians(kartSteeringAngle), glm::vec3(0.0f, 1.0f, 0.0f));
+		glm::mat4 frontWheelSteer = glm::rotate(kartModel, glm::radians(kart.kartSteeringAngle), glm::vec3(0.0f, 1.0f, 0.0f));
 		kart.kartModel.setNodeTransforms("obj5", frontWheelSteer);
 
 		// Desenează kart-ul
