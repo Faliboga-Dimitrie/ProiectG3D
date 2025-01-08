@@ -7,6 +7,8 @@
 #include <xmemory>
 #include <array>
 #include <algorithm>
+#include <random>
+#include <ctime>
 
 #include "ShaderManager.h"
 #include "Model.h"
@@ -32,6 +34,8 @@ struct Kart {
 	std::shared_ptr<Pilot> pilotModel;
 	bool isCurrentPlayer = false;
 	bool kartAccelerationChanged = false;
+	int index;
+	float mass;
 
 	Kart() = default;
 };
@@ -48,6 +52,7 @@ void RenderTerrain(Shader& shader, Model& model);
 void LoadMultipleKarts(std::array<Kart, 12>& karts, std::unordered_map<std::string, Model>& models, std::shared_ptr<Pilot> pilot);
 bool checkCollision(const Kart& kart1, const Kart& kart2);
 void handleCollision(Kart& kart1, Kart& kart2);
+float random_floatant_number();
 
 // timing
 double deltaTime = 0.0f;	// time between current frame and last frame
@@ -65,10 +70,11 @@ float kartAcceleration = 0.0f; // Accelerarea curentă
 float kartMaxSpeed = 50.0f; // Viteza maximă
 float kartAccelerationRate = 20.0f; // Rata de accelerare
 float kartDecelerationRate = 5.0f; // Rata de decelerare
-float maxCollisionDistance = 4.0f; // Distanța maximă de coliziune
+float maxCollisionDistance = 4.2f; // Distanța maximă de coliziune
 
 int currentKartIndex = 5; // Indexul următorului kart
 int lastKartIndex = -1; // Indexul kart-ului anterior
+int hitKartIndex = 1; // Indexul kart-ului lovit
 
 std::array<Kart, 12> karts; // Vectorul de kart-uri
 
@@ -246,8 +252,17 @@ void processInput(GLFWwindow* window)
 		for (size_t j = i + 1; j < karts.size(); ++j) { // Iterăm doar peste perechile de karturi neverificate
 			if (checkCollision(karts[i], karts[j])) {
 				handleCollision(karts[i], karts[j]);
-				karts[i].position -= karts[i].kartDirection * karts[i].kartAcceleration * static_cast<float>(deltaTime);
-				karts[j].position -= karts[j].kartDirection * karts[j].kartAcceleration * static_cast<float>(deltaTime);
+				if (karts[i].kartDirection.z - karts[j].kartDirection.z < 0 || karts[i].kartDirection.x - karts[j].kartDirection.x < 0)
+				{
+					karts[i].position += karts[i].kartDirection * karts[i].kartAcceleration * static_cast<float>(deltaTime);
+					karts[j].position -= karts[j].kartDirection * karts[j].kartAcceleration * static_cast<float>(deltaTime);
+				}
+				else
+				{
+					karts[i].position -= karts[i].kartDirection * karts[i].kartAcceleration * static_cast<float>(deltaTime);
+					karts[j].position += karts[j].kartDirection * karts[j].kartAcceleration * static_cast<float>(deltaTime);
+				}
+					
 			}
 		}
 	}
@@ -273,6 +288,8 @@ void processInput(GLFWwindow* window)
 
 	// Actualizează poziția kart-ului curent
 	karts[currentKartIndex].position += kartDirection * karts[currentKartIndex].kartAcceleration * static_cast<float>(deltaTime);
+	karts[currentKartIndex].position.y = karts[currentKartIndex].position.y > 0 ? karts[currentKartIndex].position.y - 0.1f : 0.0f;
+	karts[hitKartIndex].position.y = karts[hitKartIndex].position.y < 0 ? karts[hitKartIndex].position.y + 0.1f : 0.0f;
 
 	// Rotație la stânga
 	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
@@ -306,6 +323,9 @@ void processInput(GLFWwindow* window)
 			currentKartIndex--;
 		else
 			currentKartIndex = karts.size() - 1;
+
+		karts[currentKartIndex].mass += .4f;
+		karts[lastKartIndex].mass -= .4f;
 		glfwWaitEventsTimeout(1);
 	}
 
@@ -316,6 +336,9 @@ void processInput(GLFWwindow* window)
 			currentKartIndex++;
 		else
 			currentKartIndex = 0;
+
+		karts[currentKartIndex].mass += .4f;
+		karts[lastKartIndex].mass -= .4f;
 		glfwWaitEventsTimeout(1);
 	}
 
@@ -466,6 +489,8 @@ void LoadMultipleKarts(std::array<Kart, 12>& karts, std::unordered_map<std::stri
 		kart.kartModel = models.at("go_kart");
 		kart.pilotModel = pilot;
 		kart.kartAcceleration = kartAcceleration;
+		kart.index = i;
+		kart.mass = .8f + random_floatant_number();
 		karts[i] = kart;
 	}
 }
@@ -489,21 +514,17 @@ bool checkCollision(const Kart& kart1, const Kart& kart2)
 
 void handleCollision(Kart& kart1, Kart& kart2) {
 	// Presupunem că fiecare kart are o masă constantă (de exemplu 1.0f)
-	float mass1 = 1.0f;
-	float mass2 = 1.0f;
+	float mass1 = kart1.mass;
+	float mass2 = kart2.mass;
 
 	// factor de frânare 
-	float brakingFactor = 0.5f;  // Ajustează această valoare pentru un efect mai puternic
+	float brakingFactor = 0.6f;  // Ajustează această valoare pentru un efect mai puternic
 	kart1.kartDirection *= brakingFactor;
 	kart2.kartDirection *= brakingFactor;
 
 	// Calculăm viteza curentă pe baza accelerației și direcției
 	glm::vec3 velocity1 = kart1.kartDirection * kart1.kartAcceleration;
 	glm::vec3 velocity2 = kart2.kartDirection * kart2.kartAcceleration;
-
-	// Înghețăm componenta y
-	velocity1.y = 0.0f;
-	velocity2.y = 0.0f;
 
 	// Momentul fiecărui kart
 	glm::vec3 momentum1 = mass1 * velocity1;
@@ -547,11 +568,14 @@ void handleCollision(Kart& kart1, Kart& kart2) {
 		// Rotirea kartului care a suferit coliziunea
 		if (!kart1.isCurrentPlayer) {
 			float dotProduct1 = glm::dot(kart1.kartDirection, separation);
+			float dotProduct2 = glm::dot(kart2.kartDirection, separation);
 			if (dotProduct1 > 0.0f) {
 				kart1.rotationAngle += glm::abs(dotProduct1) * rotationFactor;
+				kart2.rotationAngle -= glm::abs(dotProduct1) * rotationFactor / 2;
 			}
 			else {
 				kart1.rotationAngle -= glm::abs(dotProduct1) * rotationFactor;
+				kart2.rotationAngle += glm::abs(dotProduct1) * rotationFactor / 2;
 			}
 
 			glm::vec3 kartDirection = glm::vec3(
@@ -560,15 +584,27 @@ void handleCollision(Kart& kart1, Kart& kart2) {
 				cos(glm::radians(kart1.rotationAngle))
 			);
 			kart1.kartDirection = glm::normalize(kartDirection);
+			hitKartIndex = kart1.index;
+
+			kartDirection = glm::vec3(
+				sin(glm::radians(kart2.rotationAngle)),
+				0.0f,
+				cos(glm::radians(kart2.rotationAngle))
+			);
+
+			kart2.kartDirection = glm::normalize(kartDirection);
 		}
 		else
 		{
 			float dotProduct2 = glm::dot(kart2.kartDirection, separation);
+			float dotProduct1 = glm::dot(kart1.kartDirection, separation);
 			if (dotProduct2 > 0.0f) {
 				kart2.rotationAngle += glm::abs(dotProduct2) * rotationFactor;
+				kart1.rotationAngle -= glm::abs(dotProduct2) * rotationFactor / 2;
 			}
 			else {
 				kart2.rotationAngle -= glm::abs(dotProduct2) * rotationFactor;
+				kart1.rotationAngle += glm::abs(dotProduct2) * rotationFactor / 2;
 			}
 
 			glm::vec3 kartDirection = glm::vec3(
@@ -578,8 +614,26 @@ void handleCollision(Kart& kart1, Kart& kart2) {
 			);
 
 			kart2.kartDirection = glm::normalize(kartDirection);
+			hitKartIndex = kart2.index;
+
+			kartDirection = glm::vec3(
+				sin(glm::radians(kart1.rotationAngle)),
+				0.0f,
+				cos(glm::radians(kart1.rotationAngle))
+			);
+
+			kart1.kartDirection = glm::normalize(kartDirection);
 		}
 	}
+}
+
+float random_floatant_number()
+{
+	std::random_device rd;
+	std::mt19937 gen(rd());  
+	std::uniform_real_distribution<> dis(0.0, 2.0);
+
+	return dis(gen);
 }
 
 void RenderTrack(Shader& shader, Model& model)
