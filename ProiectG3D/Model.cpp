@@ -1,4 +1,4 @@
-#include "Model.h"
+ï»¿#include "Model.h"
 
 #ifndef STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
@@ -14,8 +14,27 @@ Model::Model(string const& path, bool bSmoothNormals, bool gamma) : gammaCorrect
 
 void Model::Draw(Shader& shader)
 {
-    for (unsigned int i = 0; i < meshes.size(); i++)
+    Shader copyShader = shader;
+    for (unsigned int i = 0; i < meshes.size(); i++) {
+        if (meshes[i].name == "obj5.008" || meshes[i].name == "obj5.005"|| meshes[i].name == "obj5.004") {
+            shader.setMat4("model", nodeTransforms["obj5"]);
+        }
+        else {
+            shader = copyShader;
+        }
+
         meshes[i].Draw(shader);
+    }
+}
+
+void Model::setNodeTransforms(const std::string& nodeName, glm::mat4 transform)
+{
+    nodeTransforms[nodeName] = transform;
+}
+
+void Model::setIsAnimated(bool animated)
+{
+    isAnimated = animated;
 }
 
 glm::vec3 Model::calculateBoundingSphereCenter() const {
@@ -240,7 +259,7 @@ unsigned int TextureFromFile(const char* path, const string& directory, bool gam
         std::cout << "Texture failed to load at path: " << path << std::endl;
         stbi_image_free(data);
 
-        // Op?ional: po?i crea o texturã albã implicitã.
+        // Op?ional: po?i crea o texturÃ£ albÃ£ implicitÃ£.
         glBindTexture(GL_TEXTURE_2D, textureID);
         unsigned char whitePixel[3] = { 255, 255, 255 };
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1, 1, 0, GL_RGB, GL_UNSIGNED_BYTE, whitePixel);
